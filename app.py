@@ -7,10 +7,7 @@ using machine learning models.
 
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
-import json
 import os
 import sys
 
@@ -18,7 +15,6 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 
 from src.predict import predict_price, predict_batch, get_feature_importance, load_model
-from src.preprocess import BINARY_COLUMNS
 
 # ─── Page Config ─────────────────────────────────────────────────
 st.set_page_config(
