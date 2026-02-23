@@ -1,0 +1,30 @@
+{
+  "best_model": "Linear Regression",
+  "metrics": {
+    "MAE": 430716.37,
+    "RMSE": 531133.21,
+    "R2": 0.939
+  },
+  "all_results": {
+    "Linear Regression": {
+      "MAE": 430716.37,
+      "RMSE": 531133.21,
+      "R2": 0.939
+    },
+    "Decision Tree": {
+      "MAE": 1139849.78,
+      "RMSE": 1462993.6,
+      "R2": 0.5373
+    },
+    "Random Forest": {
+      "MAE": 734137.55,
+      "RMSE": 903235.27,
+      "R2": 0.8236
+    },
+    "Gradient Boosting": {
+      "MAE": 605993.35,
+      "RMSE": 764516.43,
+      "R2": 0.8736
+    }
+  }
+}
