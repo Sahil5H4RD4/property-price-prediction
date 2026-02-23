@@ -56,7 +56,7 @@ Real estate pricing is complex and influenced by numerous factors — property s
 
 ---
 
-## 📊 Dataset
+## Dataset
 
 **Source:** [Kaggle Housing Prices Dataset](https://www.kaggle.com/datasets/yasserh/housing-prices-dataset)
 
@@ -80,7 +80,7 @@ Real estate pricing is complex and influenced by numerous factors — property s
 
 ---
 
-## 🔧 Feature Engineering
+## Feature Engineering
 
 Starting from 12 raw features, the preprocessing pipeline creates **18 features**:
 
@@ -95,11 +95,11 @@ All binary columns are encoded as 0/1, `furnishingstatus` is one-hot encoded, an
 
 ---
 
-## 📈 Model Performance
+## Model Performance
 
 | Model | MAE (₹) | RMSE (₹) | R² Score |
 |-------|---------|----------|----------|
-| **Linear Regression** 🏆 | **430,716** | **531,133** | **0.9390** |
+| **Linear Regression** | **430,716** | **531,133** | **0.9390** |
 | Gradient Boosting | 605,993 | 764,516 | 0.8736 |
 | Random Forest | 734,138 | 903,235 | 0.8236 |
 | Decision Tree | 1,139,850 | 1,462,994 | 0.5373 |
@@ -107,30 +107,30 @@ All binary columns are encoded as 0/1, `furnishingstatus` is one-hot encoded, an
 **Best Model:** Linear Regression with R² = 0.9390
 
 ### Top Price-Driving Factors
-1. 🏗️ **Area** — Most influential factor
-2. 🏢 **Stories** — Number of floors
-3. 🛋️ **Total Rooms** — Combined bedrooms + bathrooms
-4. 🚿 **Bathrooms** — Individual bathroom count
-5. 🚗 **Parking** — Number of parking spots
+1. **Area** — Most influential factor
+2. **Stories** — Number of floors
+3. **Total Rooms** — Combined bedrooms + bathrooms
+4. **Bathrooms** — Individual bathroom count
+5. **Parking** — Number of parking spots
 
 ---
 
-## 🖥️ User Interface
+## User Interface
 
 The Streamlit app provides three main views:
 
-### 🏡 Predict Price
+### Predict Price
 - Input property details via form (area, bedrooms, amenities, etc.)
 - Get instant price prediction with model confidence
 - See price per sq ft and estimated EMI
 
-### 📊 Model Insights
+### Model Insights
 - R² score comparison across all trained models
 - MAE comparison chart
 - Detailed metrics table
 - Feature importance horizontal bar chart
 
-### 📁 Batch Upload
+### Batch Upload
 - Upload CSV file with multiple properties
 - Get predictions for all rows
 - View distribution of predicted prices
@@ -138,7 +138,7 @@ The Streamlit app provides three main views:
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Python 3.9+
@@ -203,7 +203,7 @@ property-price-prediction/
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Category | Tool |
 |----------|------|
@@ -215,6 +215,6 @@ property-price-prediction/
 
 ---
 
-## 📜 License
+## License
 
 This project is for educational purposes as part of the AI/ML course project.
