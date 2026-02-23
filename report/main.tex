@@ -1,0 +1,267 @@
+% IEEE Double-Column Template — Property Price Prediction Report
+% Compile: pdflatex → bibtex → pdflatex → pdflatex
+
+\documentclass[conference]{IEEEtran}
+
+\IEEEoverridecommandlockouts
+
+\usepackage[numbers]{natbib}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{listings}
+
+% Code listing style
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  captionpos=b
+}
+
+\begin{document}
+
+% ---------- TITLE ----------
+\title{Intelligent Property Price Prediction Using Machine Learning Regression Models}
+
+\author{
+\IEEEauthorblockN{Sahil Sharda}
+\IEEEauthorblockA{
+Property Price Prediction Team \\}
+}
+
+\maketitle
+
+% ---------- ABSTRACT ----------
+\begin{abstract}
+This paper presents an intelligent property price prediction system built using machine learning regression models. We utilize a housing dataset containing 545 records with 13 features—including area, number of rooms, amenities, and furnishing status—to train and compare four regression models: Linear Regression, Decision Tree, Random Forest, and Gradient Boosting. Our preprocessing pipeline includes binary encoding, one-hot encoding, feature engineering (derived features such as total rooms, area per room, and amenity score), and StandardScaler normalization. The best-performing model, Linear Regression, achieved an R\textsuperscript{2} score of 0.9390 with a Mean Absolute Error (MAE) of \rupee430,716. A Streamlit-based web application provides an interactive user interface for single and batch property price predictions.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Property price prediction, machine learning, regression, feature engineering, Streamlit, real estate analytics.
+\end{IEEEkeywords}
+
+% ---------- INTRODUCTION ----------
+\section{Introduction}
+Real estate pricing is a critical domain where accurate price prediction can significantly benefit buyers, sellers, and investors. Property prices are influenced by a complex interplay of factors including physical attributes (area, number of rooms), amenities (air conditioning, parking), and locational preferences (main road access, preferred area).
+
+Traditional methods of property valuation rely heavily on manual appraisals and domain expertise, which are time-consuming and subjective. Machine learning offers a data-driven alternative that can learn patterns from historical data and provide consistent, reproducible predictions.
+
+The goal of this project is to develop an end-to-end property price prediction system that:
+\begin{enumerate}
+    \item Preprocesses and engineers features from raw housing data.
+    \item Trains and compares multiple regression models.
+    \item Selects the best-performing model based on evaluation metrics.
+    \item Deploys an interactive web application for real-time predictions.
+\end{enumerate}
+
+% ---------- RELATED WORK ----------
+\section{Related Work}
+Property price prediction has been extensively studied in the machine learning literature. Prior work has applied various techniques including linear regression~\cite{fan2006determinants}, decision trees, random forests~\cite{breiman2001random}, and gradient boosting~\cite{friedman2001greedy} to real estate valuation tasks. Feature engineering—such as deriving composite indices from raw attributes—has been shown to improve prediction accuracy. Ensemble methods, particularly Random Forest and Gradient Boosting, have demonstrated strong performance in tabular regression tasks. Our work builds upon these foundations by implementing a modular, reproducible pipeline and deploying the model through an interactive Streamlit interface.
+
+% ---------- METHODOLOGY ----------
+\section{Methodology}
+
+\subsection{Dataset Description}
+The dataset (\texttt{Housing.csv}) contains 545 records with 13 features and 1 target variable (price). The features include:
+
+\begin{itemize}
+    \item \textbf{Numerical:} area, bedrooms, bathrooms, stories, parking
+    \item \textbf{Binary (yes/no):} mainroad, guestroom, basement, hotwaterheating, airconditioning, prefarea
+    \item \textbf{Categorical:} furnishingstatus (furnished, semi-furnished, unfurnished)
+\end{itemize}
+
+The target variable \texttt{price} represents the property's market value in Indian Rupees.
+
+\subsection{Preprocessing}
+The preprocessing pipeline performs the following steps:
+\begin{enumerate}
+    \item \textbf{Missing Value Handling:} Numeric columns are imputed with median values; categorical columns with mode values.
+    \item \textbf{Binary Encoding:} Six binary columns (\texttt{mainroad}, \texttt{guestroom}, \texttt{basement}, \texttt{hotwaterheating}, \texttt{airconditioning}, \texttt{prefarea}) are mapped from yes/no to 1/0.
+    \item \textbf{One-Hot Encoding:} The \texttt{furnishingstatus} column is one-hot encoded into three binary columns.
+    \item \textbf{Feature Scaling:} StandardScaler is applied to normalize all features (fit on training data, transform both train and test).
+\end{enumerate}
+
+\subsection{Feature Engineering}
+Four derived features are engineered to enhance model performance:
+\begin{itemize}
+    \item \textbf{total\_rooms:} Sum of bedrooms and bathrooms.
+    \item \textbf{area\_per\_room:} Property area divided by total rooms.
+    \item \textbf{amenity\_score:} Sum of all binary amenity features.
+    \item \textbf{area\_tier:} Quantile-based categorization of area into three tiers (0, 1, 2).
+\end{itemize}
+
+After feature engineering, the dataset contains 18 features in total.
+
+\subsection{Models Used}
+Four regression models are trained and compared:
+
+\begin{enumerate}
+    \item \textbf{Linear Regression:} A baseline linear model that fits a hyperplane to the feature space.
+    \item \textbf{Decision Tree Regressor:} A non-linear model with \texttt{max\_depth=10} and \texttt{random\_state=42}.
+    \item \textbf{Random Forest Regressor:} An ensemble of 100 decision trees with \texttt{max\_depth=15}.
+    \item \textbf{Gradient Boosting Regressor:} A sequential ensemble with 200 estimators, \texttt{learning\_rate=0.1}, and \texttt{max\_depth=5}.
+\end{enumerate}
+
+\subsection{Training and Validation}
+The dataset is split into 80\% training and 20\% testing sets using stratified random sampling (\texttt{random\_state=42}). Models are evaluated using three metrics:
+\begin{itemize}
+    \item \textbf{MAE} (Mean Absolute Error): Average absolute deviation of predictions.
+    \item \textbf{RMSE} (Root Mean Squared Error): Penalizes larger errors more heavily.
+    \item \textbf{R\textsuperscript{2}} (Coefficient of Determination): Proportion of variance explained by the model.
+\end{itemize}
+
+% ---------- RESULTS ----------
+\section{Results}
+
+\subsection{Quantitative Results}
+\begin{table}[ht]
+\centering
+\caption{Model Performance Comparison}
+\begin{tabular}{lccc}
+\toprule
+Model & MAE & RMSE & R\textsuperscript{2} \\
+\midrule
+Linear Regression & 430,716 & 531,133 & \textbf{0.9390} \\
+Decision Tree & 1,139,850 & 1,462,994 & 0.5373 \\
+Random Forest & 734,138 & 903,235 & 0.8236 \\
+Gradient Boosting & 605,993 & 764,516 & 0.8736 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Linear Regression achieved the highest R\textsuperscript{2} score of 0.9390, outperforming the ensemble methods. This suggests that the relationship between features and price is predominantly linear in the engineered feature space.
+
+\subsection{Feature Importance Analysis}
+The top five most influential features (by absolute coefficient magnitude from Linear Regression) are:
+
+\begin{table}[ht]
+\centering
+\caption{Top 5 Feature Importances}
+\begin{tabular}{lc}
+\toprule
+Feature & Importance Score \\
+\midrule
+area & 1,415,498 \\
+stories & 654,993 \\
+total\_rooms & 603,095 \\
+bathrooms & 562,538 \\
+parking & 546,027 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The \texttt{area} feature dominates pricing decisions, followed by structural features (\texttt{stories}, \texttt{total\_rooms}, \texttt{bathrooms}) and amenity-related features.
+
+% ---------- DISCUSSION ----------
+\section{Discussion}
+Several observations emerge from the results:
+
+\begin{itemize}
+    \item \textbf{Linear Regression superiority:} The strong performance of Linear Regression indicates that the feature engineering step (particularly StandardScaler normalization) creates a well-conditioned feature space where linear relationships dominate.
+    \item \textbf{Decision Tree underperformance:} The Decision Tree model significantly overfits despite depth limiting, achieving only R\textsuperscript{2} = 0.5373. This highlights the limitations of single-tree models on this dataset size.
+    \item \textbf{Ensemble improvement:} Both Random Forest and Gradient Boosting improve upon the Decision Tree but do not surpass Linear Regression, suggesting limited non-linear interactions in the data.
+    \item \textbf{Feature engineering impact:} Derived features such as \texttt{total\_rooms} and \texttt{amenity\_score} appear in the top importance rankings, validating the feature engineering approach.
+\end{itemize}
+
+\textbf{Limitations:}
+\begin{itemize}
+    \item The dataset contains only 545 records, which limits the capacity of complex models.
+    \item Location-specific features (neighborhood, city, district) are not included.
+    \item Temporal factors (market trends, inflation) are not captured.
+\end{itemize}
+
+% ---------- CONCLUSION ----------
+\section{Conclusion}
+This project demonstrates a complete machine learning pipeline for property price prediction, from data preprocessing and feature engineering through model training, evaluation, and deployment. Key contributions include:
+
+\begin{enumerate}
+    \item A modular preprocessing pipeline with automated binary encoding, one-hot encoding, and feature engineering.
+    \item Comparative evaluation of four regression models, with Linear Regression achieving the best R\textsuperscript{2} of 0.9390.
+    \item An interactive Streamlit web application supporting single predictions, batch uploads, and model insight visualization.
+    \item A reproducible codebase with clear separation of concerns across modules.
+\end{enumerate}
+
+Future work could include incorporating larger datasets, adding geospatial features, exploring deep learning approaches, and implementing time-series analysis for market trend prediction.
+
+% ---------- REFERENCES ----------
+\begin{thebibliography}{9}
+\bibitem{fan2006determinants}
+G.~Z. Fan, S.~E. Ong, and H.~C. Koh, ``Determinants of house price: A decision tree approach,'' \textit{Urban Studies}, vol.~43, no.~12, pp. 2301--2315, 2006.
+
+\bibitem{breiman2001random}
+L.~Breiman, ``Random forests,'' \textit{Machine Learning}, vol.~45, no.~1, pp. 5--32, 2001.
+
+\bibitem{friedman2001greedy}
+J.~H. Friedman, ``Greedy function approximation: A gradient boosting machine,'' \textit{Annals of Statistics}, vol.~29, no.~5, pp. 1189--1232, 2001.
+
+\bibitem{sklearn}
+F.~Pedregosa \textit{et al.}, ``Scikit-learn: Machine learning in Python,'' \textit{Journal of Machine Learning Research}, vol.~12, pp. 2825--2830, 2011.
+
+\bibitem{streamlit}
+Streamlit Inc., ``Streamlit — The fastest way to build data apps,'' 2024. [Online]. Available: \url{https://streamlit.io}
+\end{thebibliography}
+
+% ---------- APPENDIX ----------
+\appendix
+
+\section{GitHub Repository Information}
+
+This appendix provides details regarding the project's GitHub repository and associated file structure for reproducibility and open-source collaboration.
+
+\subsection{Repository Link}
+The complete source code, trained models, and documentation are available at:
+
+\begin{center}
+\textbf{\url{https://github.com/Sahil5H4RD4/property-price-prediction}}
+\end{center}
+
+\subsection{Repository Structure}
+
+The project repository follows the structure shown below:
+
+\begin{lstlisting}
+property-price-prediction/
+|-- app.py              # Streamlit web app
+|-- data/
+|   |-- Housing.csv     # Raw dataset (545 rows)
+|-- models/
+|   |-- best_model.pkl  # Trained model
+|   |-- scaler.pkl      # Fitted scaler
+|   |-- feature_names.pkl
+|   |-- model_info.json
+|   |-- feature_importance.csv
+|-- notebooks/
+|   |-- EDA.ipynb       # Exploratory analysis
+|-- src/
+|   |-- preprocess.py   # Preprocessing pipeline
+|   |-- train.py        # Training pipeline
+|   |-- predict.py      # Prediction utilities
+|-- static/
+|   |-- style.css       # UI stylesheet
+|-- report/
+|   |-- main.tex        # This report
+|-- requirements.txt
+|-- README.md
+\end{lstlisting}
+
+\subsection{Description of Key Components}
+
+\begin{itemize}
+    \item \textbf{data/}: Contains the raw Housing.csv dataset with 545 property records.
+    \item \textbf{notebooks/}: Jupyter Notebook for exploratory data analysis.
+    \item \textbf{src/}: Modular Python source code—preprocessing (\texttt{preprocess.py}), model training (\texttt{train.py}), and prediction (\texttt{predict.py}).
+    \item \textbf{models/}: Trained model artifacts (pickle files) and metadata (JSON/CSV).
+    \item \textbf{static/}: CSS stylesheet for the Streamlit UI.
+    \item \textbf{report/}: LaTeX source for this IEEE-format project report.
+    \item \textbf{requirements.txt}: Python dependencies for reproducibility.
+    \item \textbf{README.md}: Setup instructions and project overview.
+\end{itemize}
+
+\end{document}
