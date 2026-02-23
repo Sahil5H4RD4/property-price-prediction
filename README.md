@@ -1,4 +1,4 @@
-# 🏠 Intelligent Property Price Prediction System
+# Intelligent Property Price Prediction System
 
 An AI-driven real estate analytics system that predicts property prices using historical data and machine learning models. Built with scikit-learn, Streamlit, and Plotly.
 
@@ -6,7 +6,7 @@ An AI-driven real estate analytics system that predicts property prices using hi
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Real estate pricing is complex and influenced by numerous factors — property size, location features, amenities, and market conditions. This project aims to:
 
@@ -17,7 +17,7 @@ Real estate pricing is complex and influenced by numerous factors — property s
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
