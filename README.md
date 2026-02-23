@@ -173,7 +173,7 @@ The app will open at `http://localhost:8501`.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 property-price-prediction/
