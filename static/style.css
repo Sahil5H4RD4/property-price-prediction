@@ -5,7 +5,11 @@
 }
 
 .stApp {
-    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    /* background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); */
+    background: rgba(255, 255, 255, 0.1); 
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #F5F7FA;
 }
 
 .prediction-card {
