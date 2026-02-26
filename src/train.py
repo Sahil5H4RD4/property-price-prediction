@@ -96,7 +96,7 @@ def train_and_evaluate():
     results = {}
     trained_models = {}
 
-    print("\n📊 Training models...\n")
+    print("/n Training models...\n")
     print(f"{'Model':<25} {'MAE':>12} {'RMSE':>12} {'R²':>10}")
     print("-" * 60)
 
@@ -110,12 +110,12 @@ def train_and_evaluate():
     # Find best model (highest R²)
     best_name = max(results, key=lambda k: results[k]['R2'])
     best_model = trained_models[best_name]
-    print(f"\n🏆 Best Model: {best_name} (R² = {results[best_name]['R2']:.4f})")
+    print(f"\n Best Model: {best_name} (R² = {results[best_name]['R2']:.4f})")
 
     # Save best model
     model_path = os.path.join(MODELS_DIR, 'best_model.pkl')
     joblib.dump(best_model, model_path)
-    print(f"✅ Best model saved to {model_path}")
+    print(f"Best model saved to {model_path}")
 
     # Save model name
     model_info = {
@@ -126,18 +126,18 @@ def train_and_evaluate():
     info_path = os.path.join(MODELS_DIR, 'model_info.json')
     with open(info_path, 'w') as f:
         json.dump(model_info, f, indent=2)
-    print(f"✅ Model info saved to {info_path}")
+    print(f"Model info saved to {info_path}")
 
     # Feature importance from best model
     importance_df = get_feature_importance(best_model, feature_names, best_name)
     if importance_df is not None:
         importance_path = os.path.join(MODELS_DIR, 'feature_importance.csv')
         importance_df.to_csv(importance_path, index=False)
-        print(f"\n📊 Top Feature Importances ({best_name}):")
+        print(f"\n Top Feature Importances ({best_name}):")
         print(importance_df.head(10).to_string(index=False))
 
     print("\n" + "=" * 60)
-    print("✅ Training pipeline complete!")
+    print("Training pipeline complete!")
     print("=" * 60)
 
     return results, best_name, importance_df
