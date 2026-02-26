@@ -151,13 +151,18 @@ div[data-testid="stMetric"] {
 }
 
 .stTabs [data-baseweb="tab"] {
-    background-color: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    color: #c7d2fe;
-    font-weight: 500;
+    /* background-color: rgba(255, 255, 255, 0.05); */
+    /* border-radius: 8px; */
+    /* color: #c7d2fe; */
+    /* font-weight: 500; */
+    background-color: #161B22;
+    border: 1px solid #2D333B;
+    color: #9CA3AF;
 }
 
 .stTabs [aria-selected="true"] {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    color: white !important;
+    /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important; */
+    background: #2D333B !important;
+    color: #FFFFFF !important;
 }
