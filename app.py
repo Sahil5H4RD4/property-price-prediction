@@ -341,8 +341,3 @@ if model_loaded:
         """)
 
         st.markdown("---")
-        st.markdown(
-            "<p style='text-align: center; color: #6b7280; font-size: 0.8rem;'>"
-            "Built with ❤️ for AI Real Estate Analytics</p>",
-            unsafe_allow_html=True
-        )
