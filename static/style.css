@@ -6,27 +6,29 @@
 
 .stApp {
     /* background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); */
-    background: rgba(255, 255, 255, 0.1); 
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #F5F7FA;
+    background: #0E1117;
+    color: #F1F5F9;
 }
 
 .prediction-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 16px;
     padding: 30px;
     text-align: center;
     color: white;
     box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
-    margin: 20px 0;
+    margin: 20px 0; */
+    background: #161B22;
+    border: 1px solid #2D333B;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
 }
 
 .prediction-card h1 {
-    font-size: 2.8rem;
+    /* font-size: 2.8rem;
     font-weight: 700;
     margin: 0;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); */
+    color: #FFFFFF;
 }
 
 .prediction-card p {
@@ -36,14 +38,17 @@
 }
 
 .metric-card {
-    background: rgba(255, 255, 255, 0.08);
+    /* background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 12px;
     padding: 20px;
     text-align: center;
     color: white;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease; */
+    background: #161B22;
+    border: 1px solid #2D333B;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
 }
 
 .metric-card:hover {
@@ -94,7 +99,9 @@
 
 /* Sidebar styling */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #1e1b4b 0%, #312e81 100%);
+    /* background: linear-gradient(180deg, #1e1b4b 0%, #312e81 100%); */
+    background: #11151C;
+    border-right: 1px solid #2D333B;
 }
 
 [data-testid="stSidebar"] .stMarkdown h1,
