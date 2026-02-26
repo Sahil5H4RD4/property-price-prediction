@@ -18,8 +18,8 @@ from src.predict import predict_price, predict_batch, get_feature_importance, lo
 
 # ─── Page Config ─────────────────────────────────────────────────
 st.set_page_config(
-    page_title="🏠 Property Price Predictor",
-    page_icon="🏠",
+    page_title="Property Price Predictor",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -41,49 +41,49 @@ try:
     model_loaded = True
 except Exception as e:
     model_loaded = False
-    st.error(f"⚠️ Model not found! Please run `python src/train.py` first.\n\nError: {e}")
+    st.error(f"Model not found! Please run `python src/train.py` first.\n\nError: {e}")
 
 # ─── Header ──────────────────────────────────────────────────────
 st.markdown("""
 <div class="header-container">
-    <h1>🏠 Property Price Predictor</h1>
+    <h1>Property Price Predictor</h1>
     <p>AI-powered real estate price prediction using machine learning</p>
 </div>
 """, unsafe_allow_html=True)
 
 if model_loaded:
     # ─── Tabs ────────────────────────────────────────────────────
-    tab1, tab2, tab3 = st.tabs(["🏡 Predict Price", "📊 Model Insights", "📁 Batch Upload"])
+    tab1, tab2, tab3 = st.tabs(["Predict Price", "Model Insights", "📁 Batch Upload"])
 
     # ─────────────────────────────────────────────────────────────
     # TAB 1: Single Property Prediction
     # ─────────────────────────────────────────────────────────────
     with tab1:
-        st.markdown('<p class="section-header">📝 Enter Property Details</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-header">Enter Property Details</p>', unsafe_allow_html=True)
 
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            area = st.number_input("🏗️ Area (sq ft)", min_value=500, max_value=20000, value=5000, step=100)
-            bedrooms = st.selectbox("🛏️ Bedrooms", options=[1, 2, 3, 4, 5, 6], index=2)
-            bathrooms = st.selectbox("🚿 Bathrooms", options=[1, 2, 3, 4], index=1)
-            stories = st.selectbox("🏢 Stories", options=[1, 2, 3, 4], index=1)
+            area = st.number_input("Area (sq ft)", min_value=500, max_value=20000, value=5000, step=100)
+            bedrooms = st.selectbox("Bedrooms", options=[1, 2, 3, 4, 5, 6], index=2)
+            bathrooms = st.selectbox("Bathrooms", options=[1, 2, 3, 4], index=1)
+            stories = st.selectbox("Stories", options=[1, 2, 3, 4], index=1)
 
         with col2:
-            mainroad = st.selectbox("🛣️ Main Road Access", options=['yes', 'no'], index=0)
-            guestroom = st.selectbox("🛋️ Guest Room", options=['yes', 'no'], index=1)
-            basement = st.selectbox("🏠 Basement", options=['yes', 'no'], index=1)
-            hotwaterheating = st.selectbox("🔥 Hot Water Heating", options=['yes', 'no'], index=1)
+            mainroad = st.selectbox("Main Road Access", options=['yes', 'no'], index=0)
+            guestroom = st.selectbox("Guest Room", options=['yes', 'no'], index=1)
+            basement = st.selectbox("Basement", options=['yes', 'no'], index=1)
+            hotwaterheating = st.selectbox("Hot Water Heating", options=['yes', 'no'], index=1)
 
         with col3:
-            airconditioning = st.selectbox("❄️ Air Conditioning", options=['yes', 'no'], index=0)
-            parking = st.selectbox("🚗 Parking Spots", options=[0, 1, 2, 3], index=1)
-            prefarea = st.selectbox("⭐ Preferred Area", options=['yes', 'no'], index=0)
-            furnishingstatus = st.selectbox("🪑 Furnishing Status",
+            airconditioning = st.selectbox("Air Conditioning", options=['yes', 'no'], index=0)
+            parking = st.selectbox("Parking Spots", options=[0, 1, 2, 3], index=1)
+            prefarea = st.selectbox("Preferred Area", options=['yes', 'no'], index=0)
+            furnishingstatus = st.selectbox("Furnishing Status",
                                             options=['furnished', 'semi-furnished', 'unfurnished'], index=1)
 
         st.markdown("")
-        predict_btn = st.button("🔮 Predict Price", use_container_width=True)
+        predict_btn = st.button("Predict Price", use_container_width=True)
 
         if predict_btn:
             input_data = {
@@ -94,7 +94,7 @@ if model_loaded:
                 'prefarea': prefarea, 'furnishingstatus': furnishingstatus
             }
 
-            with st.spinner("🔄 Analyzing property..."):
+            with st.spinner("Analyzing property..."):
                 result = predict_price(input_data, model=model, scaler=scaler, feature_names=feature_names)
 
             predicted = result['predicted_price']
@@ -136,7 +136,7 @@ if model_loaded:
     # TAB 2: Model Insights
     # ─────────────────────────────────────────────────────────────
     with tab2:
-        st.markdown('<p class="section-header">📊 Model Performance</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-header"> Model Performance</p>', unsafe_allow_html=True)
 
         # Model metrics comparison
         all_results = model_info.get('all_results', {})
@@ -200,10 +200,10 @@ if model_loaded:
 
             # Highlight best model
             st.dataframe(styled_df, use_container_width=True, hide_index=True)
-            st.info(f"🏆 **Best Model:** {model_info['best_model']} with R² = {model_info['metrics']['R2']:.4f}")
+            st.info(f"**Best Model:** {model_info['best_model']} with R² = {model_info['metrics']['R2']:.4f}")
 
         # Feature Importance
-        st.markdown('<p class="section-header">🎯 Feature Importance</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-header"> Feature Importance</p>', unsafe_allow_html=True)
         importance_df = get_feature_importance()
         if importance_df is not None:
             fig_imp = px.bar(
@@ -246,7 +246,7 @@ if model_loaded:
 
         st.markdown("""
         <div class="metric-card" style="text-align: left;">
-            <h3>📋 Required CSV Columns</h3>
+            <h3> Required CSV Columns</h3>
             <p style="color: #c7d2fe;">
                 area, bedrooms, bathrooms, stories, mainroad, guestroom, basement,
                 hotwaterheating, airconditioning, parking, prefarea, furnishingstatus
@@ -260,17 +260,17 @@ if model_loaded:
         if uploaded_file:
             try:
                 df_upload = pd.read_csv(uploaded_file)
-                st.success(f"✅ Loaded {len(df_upload)} properties")
+                st.success(f" Loaded {len(df_upload)} properties")
 
                 # Show preview
                 st.markdown('<p class="section-header">📋 Data Preview</p>', unsafe_allow_html=True)
                 st.dataframe(df_upload.head(10), use_container_width=True)
 
-                if st.button("🔮 Predict All Prices", use_container_width=True):
-                    with st.spinner("🔄 Processing batch predictions..."):
+                if st.button(" Predict All Prices", use_container_width=True):
+                    with st.spinner(" Processing batch predictions..."):
                         result_df = predict_batch(df_upload, model=model, scaler=scaler, feature_names=feature_names)
 
-                    st.markdown('<p class="section-header">📊 Predictions</p>', unsafe_allow_html=True)
+                    st.markdown('<p class="section-header"> Predictions</p>', unsafe_allow_html=True)
                     st.dataframe(result_df, use_container_width=True)
 
                     # Summary stats
@@ -303,7 +303,7 @@ if model_loaded:
                     # Download results
                     csv = result_df.to_csv(index=False)
                     st.download_button(
-                        label="📥 Download Predictions CSV",
+                        label=" Download Predictions CSV",
                         data=csv,
                         file_name="property_predictions.csv",
                         mime="text/csv",
@@ -311,11 +311,11 @@ if model_loaded:
                     )
 
             except Exception as e:
-                st.error(f"❌ Error processing file: {e}")
+                st.error(f" Error processing file: {e}")
 
     # ─── Sidebar ─────────────────────────────────────────────────
     with st.sidebar:
-        st.markdown("### 🏠 About")
+        st.markdown("### About")
         st.markdown("""
         This app uses **machine learning** to predict
         property prices based on various features like
@@ -323,7 +323,7 @@ if model_loaded:
         """)
 
         st.markdown("---")
-        st.markdown("### 📊 Model Info")
+        st.markdown("### Model Info")
         st.markdown(f"""
         - **Model:** {model_info['best_model']}
         - **R² Score:** {model_info['metrics']['R2']:.4f}
