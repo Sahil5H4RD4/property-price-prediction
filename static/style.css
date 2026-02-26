@@ -5,29 +5,21 @@
 }
 
 .stApp {
-    /* background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); */
     background: #0E1117;
     color: #F1F5F9;
 }
 
 .prediction-card {
-     /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
     border-radius: 16px;
-    /* padding: 30px; */
     text-align: center;
-    /* color: white; */
-    /* box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3); */
-    /* margin: 20px 0;  */
+    color: white;
+    margin: 20px 0; 
     background: #161B22;
     border: 1px solid #2D333B;
     box-shadow: 0 4px 20px rgba(0,0,0,0.4);
 }
 
 .prediction-card h1 {
-    /* font-size: 2.8rem;
-    font-weight: 700;
-    margin: 0;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); */
     color: #FFFFFF;
 }
 
@@ -38,13 +30,8 @@
 }
 
 .metric-card {
-    /* background: rgba(255, 255, 255, 0.08); */
-    /* backdrop-filter: blur(20px); */
-    /* border: 1px solid rgba(255, 255, 255, 0.12); */
     border-radius: 12px;
-    /* padding: 20px; */
     text-align: center;
-    /* color: white; */
     transition: transform 0.2s ease; 
     background: #161B22;
     border: 1px solid #2D333B;
@@ -99,7 +86,6 @@
 
 /* Sidebar styling */
 [data-testid="stSidebar"] {
-    /* background: linear-gradient(180deg, #1e1b4b 0%, #312e81 100%); */
     background: #11151C;
     border-right: 1px solid #2D333B;
 }
@@ -119,23 +105,12 @@
 }
 
 .stButton>button {
-    /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    padding: 12px 30px;
-    font-weight: 600;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-    width: 100%; */
     background: #E5E7EB;
     color: #111827;
     border-radius: 8px;
 }
 
 .stButton>button:hover {
-    /* transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); */
      background: #FFFFFF;
 }
 
@@ -151,18 +126,12 @@ div[data-testid="stMetric"] {
 }
 
 .stTabs [data-baseweb="tab"] {
-    /* background-color: rgba(255, 255, 255, 0.05); */
-    /* border-radius: 8px; */
-    /* color: #c7d2fe; */
-    /* font-weight: 500; */
     background-color: #161B22;
     border: 1px solid #2D333B;
     color: #9CA3AF;
 }
 
 .stTabs [aria-selected="true"] {
-    /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    color: white !important; */
     background: #2D333B !important;
     color: #FFFFFF !important;
 }
