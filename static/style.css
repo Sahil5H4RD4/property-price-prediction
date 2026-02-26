@@ -38,14 +38,14 @@
 }
 
 .metric-card {
-    /* background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    /* background: rgba(255, 255, 255, 0.08); */
+    /* backdrop-filter: blur(20px); */
+    /* border: 1px solid rgba(255, 255, 255, 0.12); */
     border-radius: 12px;
-    padding: 20px;
+    /* padding: 20px; */
     text-align: center;
-    color: white;
-    transition: transform 0.2s ease; */
+    /* color: white; */
+    transition: transform 0.2s ease; 
     background: #161B22;
     border: 1px solid #2D333B;
     box-shadow: 0 4px 20px rgba(0,0,0,0.4);
