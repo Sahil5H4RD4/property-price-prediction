@@ -33,7 +33,7 @@ NUMERICAL_COLUMNS = ['area', 'bedrooms', 'bathrooms', 'stories', 'parking']
 def load_raw_data():
     """Load the raw housing CSV."""
     df = pd.read_csv(DATA_PATH)
-    print(f"✅ Loaded {len(df)} rows, {len(df.columns)} columns")
+    print(f"Loaded {len(df)} rows, {len(df.columns)} columns")
     return df
 
 
@@ -42,7 +42,7 @@ def handle_missing_values(df):
     # Check for missing values
     missing = df.isnull().sum()
     if missing.sum() > 0:
-        print(f"⚠️  Found missing values:\n{missing[missing > 0]}")
+        print(f"Found missing values:\n{missing[missing > 0]}")
         # Fill numeric with median
         for col in df.select_dtypes(include=[np.number]).columns:
             if df[col].isnull().sum() > 0:
@@ -51,9 +51,9 @@ def handle_missing_values(df):
         for col in df.select_dtypes(include=['object']).columns:
             if df[col].isnull().sum() > 0:
                 df[col].fillna(df[col].mode()[0], inplace=True)
-        print("✅ Missing values handled")
+        print("Missing values handled")
     else:
-        print("✅ No missing values found")
+        print("No missing values found")
     return df
 
 
@@ -62,14 +62,14 @@ def encode_binary_features(df):
     for col in BINARY_COLUMNS:
         if col in df.columns:
             df[col] = df[col].map({'yes': 1, 'no': 0})
-    print(f"✅ Encoded {len(BINARY_COLUMNS)} binary columns")
+    print(f"Encoded {len(BINARY_COLUMNS)} binary columns")
     return df
 
 
 def encode_categorical_features(df):
     """One-hot encode categorical features."""
     df = pd.get_dummies(df, columns=CATEGORICAL_COLUMNS, drop_first=False)
-    print(f"✅ One-hot encoded: {CATEGORICAL_COLUMNS}")
+    print(f"One-hot encoded: {CATEGORICAL_COLUMNS}")
     return df
 
 
@@ -88,7 +88,7 @@ def engineer_features(df):
     # Property tier based on area
     df['area_tier'] = pd.qcut(df['area'], q=3, labels=[0, 1, 2]).astype(int)
 
-    print(f"✅ Engineered features: total_rooms, area_per_room, amenity_score, area_tier")
+    print(f"Engineered features: total_rooms, area_per_room, amenity_score, area_tier")
     return df
 
 
@@ -109,7 +109,7 @@ def scale_features(X_train, X_test):
     # Save the scaler for inference
     scaler_path = os.path.join(MODELS_DIR, 'scaler.pkl')
     joblib.dump(scaler, scaler_path)
-    print(f"✅ Scaler saved to {scaler_path}")
+    print(f"Scaler saved to {scaler_path}")
 
     return X_train_scaled, X_test_scaled, scaler
 
@@ -149,7 +149,7 @@ def preprocess_pipeline(test_size=0.2, random_state=42):
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=random_state
     )
-    print(f"✅ Train/test split: {len(X_train)} train, {len(X_test)} test")
+    print(f"Train/test split: {len(X_train)} train, {len(X_test)} test")
 
     # Scale
     X_train_scaled, X_test_scaled, scaler = scale_features(X_train, X_test)
@@ -157,9 +157,9 @@ def preprocess_pipeline(test_size=0.2, random_state=42):
     # Save feature names
     feature_names_path = os.path.join(MODELS_DIR, 'feature_names.pkl')
     joblib.dump(feature_names, feature_names_path)
-    print(f"✅ Feature names saved ({len(feature_names)} features)")
+    print(f"Feature names saved ({len(feature_names)} features)")
 
-    print("\n✅ Preprocessing complete!")
+    print("\n Preprocessing complete!")
     print(f"   Features: {feature_names}")
     print("=" * 60)
 
