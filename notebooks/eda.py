@@ -57,7 +57,7 @@ def plot_price_distribution(df):
     plt.tight_layout()
     plt.savefig(os.path.join(OUTPUT_DIR, 'price_distribution.png'), dpi=150, bbox_inches='tight')
     plt.close()
-    print("\n✅ Saved: price_distribution.png")
+    print("\n Saved: price_distribution.png")
 
 
 def plot_correlation_heatmap(df):
@@ -79,11 +79,11 @@ def plot_correlation_heatmap(df):
     plt.tight_layout()
     plt.savefig(os.path.join(OUTPUT_DIR, 'correlation_heatmap.png'), dpi=150, bbox_inches='tight')
     plt.close()
-    print("✅ Saved: correlation_heatmap.png")
+    print(" Saved: correlation_heatmap.png")
 
     # Print top correlations with price
     price_corr = corr['price'].drop('price').sort_values(ascending=False)
-    print(f"\n📊 Top Correlations with Price:\n{price_corr}")
+    print(f"\n Top Correlations with Price:\n{price_corr}")
 
 
 def plot_feature_vs_price(df):
@@ -130,7 +130,7 @@ def plot_feature_vs_price(df):
     plt.tight_layout()
     plt.savefig(os.path.join(OUTPUT_DIR, 'feature_vs_price.png'), dpi=150, bbox_inches='tight')
     plt.close()
-    print("✅ Saved: feature_vs_price.png")
+    print(" Saved: feature_vs_price.png")
 
 
 def plot_categorical_analysis(df):
@@ -153,11 +153,11 @@ def plot_categorical_analysis(df):
     plt.tight_layout()
     plt.savefig(os.path.join(OUTPUT_DIR, 'categorical_analysis.png'), dpi=150, bbox_inches='tight')
     plt.close()
-    print("✅ Saved: categorical_analysis.png")
+    print(" Saved: categorical_analysis.png")
 
 
 if __name__ == '__main__':
-    print("🏠 Housing Prices - Exploratory Data Analysis")
+    print("Housing Prices - Exploratory Data Analysis")
     print("=" * 60)
 
     df = load_data()
@@ -167,5 +167,5 @@ if __name__ == '__main__':
     plot_categorical_analysis(df)
 
     print("\n" + "=" * 60)
-    print("✅ EDA Complete! Plots saved to data/eda_plots/")
+    print("EDA Complete! Plots saved to data/eda_plots/")
     print("=" * 60)
