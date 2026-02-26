@@ -117,6 +117,6 @@ if __name__ == '__main__':
     }
 
     result = predict_price(sample)
-    print(f"\n🏠 Sample Property Prediction:")
+    print(f"\n Sample Property Prediction:")
     print(f"   Predicted Price: ₹{result['predicted_price']:,.2f}")
     print(f"   Model: {result['model_name']} (R² = {result['model_r2']})")
