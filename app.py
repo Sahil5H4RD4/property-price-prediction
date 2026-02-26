@@ -1,5 +1,5 @@
 """
-🏠 Intelligent Property Price Prediction System
+Intelligent Property Price Prediction System
 ================================================
 Streamlit-based UI for predicting property prices
 using machine learning models.
@@ -332,7 +332,7 @@ if model_loaded:
         """)
 
         st.markdown("---")
-        st.markdown("### 🔧 Tech Stack")
+        st.markdown("### Tech Stack")
         st.markdown("""
         - **ML:** scikit-learn
         - **UI:** Streamlit
