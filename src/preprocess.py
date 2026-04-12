@@ -61,7 +61,9 @@ def encode_binary_features(df):
     """Encode yes/no binary features as 0/1."""
     for col in BINARY_COLUMNS:
         if col in df.columns:
-            df[col] = df[col].map({'yes': 1, 'no': 0})
+            # More robust check: handle any non-numeric type that might contain 'yes'/'no'
+            if not pd.api.types.is_numeric_dtype(df[col]):
+                df[col] = df[col].map({'yes': 1, 'no': 0}).fillna(0).astype(int)
     print(f"Encoded {len(BINARY_COLUMNS)} binary columns")
     return df
 
@@ -189,8 +191,9 @@ def preprocess_single_input(input_dict, scaler=None, feature_names=None):
     # Encode binary features
     for col in BINARY_COLUMNS:
         if col in df.columns:
-            if df[col].dtype == object:
-                df[col] = df[col].map({'yes': 1, 'no': 0})
+            # Robust check for strings/objects/categories
+            if not pd.api.types.is_numeric_dtype(df[col]):
+                df[col] = df[col].map({'yes': 1, 'no': 0}).fillna(0).astype(int)
 
     # One-hot encode furnishing status
     if 'furnishingstatus' in df.columns:
@@ -222,7 +225,8 @@ def preprocess_single_input(input_dict, scaler=None, feature_names=None):
         if feat not in df.columns:
             df[feat] = 0
 
-    df = df[feature_names]
+    # Ensure all features are numeric and final cast to float
+    df = df.astype(float)
 
     # Scale
     df_scaled = pd.DataFrame(
