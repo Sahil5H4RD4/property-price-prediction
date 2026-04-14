@@ -101,11 +101,16 @@ def train_and_evaluate():
     print("-" * 60)
 
     for name, model in models.items():
+        print(f"  Training {name}...")
         model.fit(X_train, y_train)
         metrics = evaluate_model(model, X_test, y_test)
         results[name] = metrics
         trained_models[name] = model
         print(f"{name:<25} {metrics['MAE']:>12,.2f} {metrics['RMSE']:>12,.2f} {metrics['R2']:>10.4f}")
+
+        # Save each model
+        model_filename = f"{name.replace(' ', '_').lower()}.pkl"
+        joblib.dump(model, os.path.join(MODELS_DIR, model_filename))
 
     # Find best model (highest R²)
     best_name = max(results, key=lambda k: results[k]['R2'])
@@ -128,13 +133,19 @@ def train_and_evaluate():
         json.dump(model_info, f, indent=2)
     print(f"Model info saved to {info_path}")
 
-    # Feature importance from best model
-    importance_df = get_feature_importance(best_model, feature_names, best_name)
-    if importance_df is not None:
-        importance_path = os.path.join(MODELS_DIR, 'feature_importance.csv')
-        importance_df.to_csv(importance_path, index=False)
-        print(f"\n Top Feature Importances ({best_name}):")
-        print(importance_df.head(10).to_string(index=False))
+    # Feature importances for all applicable models
+    for name, model in trained_models.items():
+        importance_df = get_feature_importance(model, feature_names, name)
+        if importance_df is not None:
+            safe_name = name.replace(' ', '_').lower()
+            importance_path = os.path.join(MODELS_DIR, f'importance_{safe_name}.csv')
+            importance_df.to_csv(importance_path, index=False)
+            
+            # For backward compatibility and main view, save best model importance as the main one
+            if name == best_name:
+                importance_df.to_csv(os.path.join(MODELS_DIR, 'feature_importance.csv'), index=False)
+                print(f"\n Top Feature Importances ({best_name}):")
+                print(importance_df.head(10).to_string(index=False))
 
     print("\n" + "=" * 60)
     print("Training pipeline complete!")

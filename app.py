@@ -24,24 +24,57 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ─── Custom CSS ──────────────────────────────────────────────────
-css_path = os.path.join(os.path.dirname(__file__), "static", "style.css")
-with open(css_path) as f:
-    css_content = f.read()
-st.markdown(f"<style>{css_content}</style>", unsafe_allow_html=True)
-
-
-# ─── Load Model ──────────────────────────────────────────────────
+# === Section ===
 @st.cache_resource
-def cached_load_model():
-    return load_model()
+def get_all_model_info():
+    """Load the model info JSON once."""
+    from src.predict import MODELS_DIR
+    import json
+    with open(os.path.join(MODELS_DIR, 'model_info.json'), 'r') as f:
+        return json.load(f)
 
 try:
-    model, scaler, feature_names, model_info = cached_load_model()
-    model_loaded = True
+    all_info = get_all_model_info()
+    model_names = list(all_info['all_results'].keys())
+    
+    # Sidebar Model Selection
+    with st.sidebar:
+        st.markdown("### 🤖 Model Control Panel")
+        selected_model_name = st.selectbox(
+            "Select Model for Prediction",
+            options=model_names,
+            index=model_names.index(all_info['best_model'])
+        )
+        
+        # Load the specific selected model
+        model, scaler, feature_names, model_info = load_model(selected_model_name)
+        model_loaded = True
+        
+        # Performance Metrics for selected model
+        m = all_info['all_results'][selected_model_name]
+        st.markdown(f"""
+        <div class="metric-card" style="padding: 15px; background: rgba(16, 185, 129, 0.05);">
+            <p style="font-size: 0.8rem; color: #94a3b8; margin: 0;">R² Score</p>
+            <h2 style="margin: 0; color: #10b981;">{m['R2']:.4f}</h2>
+            <p style="font-size: 0.8rem; color: #94a3b8; margin: 10px 0 0 0;">MAE</p>
+            <h2 style="margin: 0; color: #f8fafc;">₹{m['MAE']:,.0f}</h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        with st.expander("📚 What do these mean?"):
+            st.markdown("""
+            **R² Score**: How accurate the model is (1.0 is perfect).
+            
+            **MAE (Mean Absolute Error)**: Average amount the prediction is "off" by.
+            
+            **RMSE**: Similar to MAE but punishes large errors more heavily.
+            """)
+        
+        st.markdown("---")
+
 except Exception as e:
     model_loaded = False
-    st.error(f"Model not found! Please run `python src/train.py` first.\n\nError: {e}")
+    st.error(f"Model loading failed! Error: {e}")
 
 # ─── Header ──────────────────────────────────────────────────────
 st.markdown("""
@@ -94,17 +127,24 @@ if model_loaded:
                 'prefarea': prefarea, 'furnishingstatus': furnishingstatus
             }
 
-            with st.spinner("Analyzing property..."):
-                result = predict_price(input_data, model=model, scaler=scaler, feature_names=feature_names)
+            with st.spinner(f"Analyzing property using {selected_model_name}..."):
+                # Use the selected model from sidebar
+                result = predict_price(
+                    input_data, 
+                    model=model, 
+                    scaler=scaler, 
+                    feature_names=feature_names,
+                    model_name=selected_model_name
+                )
 
             predicted = result['predicted_price']
 
             # Prediction Card
             st.markdown(f"""
             <div class="prediction-card">
-                <p>Estimated Property Price</p>
+                <p>Estimated Property Price ({selected_model_name})</p>
                 <h1>₹{predicted:,.0f}</h1>
-                <p>Model: {result['model_name']} | R² Score: {result['model_r2']}</p>
+                <p>Confidence (R²): {result['model_r2']:.4f}</p>
             </div>
             """, unsafe_allow_html=True)
 
@@ -127,8 +167,8 @@ if model_loaded:
             with col_c:
                 st.markdown(f"""
                 <div class="metric-card">
-                    <h3>Model Accuracy</h3>
-                    <h2>{result['model_r2'] * 100:.1f}%</h2>
+                    <h3>Model Error (MAE)</h3>
+                    <h2>₹{result['model_mae']:,.0f}</h2>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -139,120 +179,91 @@ if model_loaded:
         st.markdown('<p class="section-header"> Model Performance</p>', unsafe_allow_html=True)
 
         # Model metrics comparison
-        all_results = model_info.get('all_results', {})
-        if all_results:
-            metrics_df = pd.DataFrame(all_results).T
-            metrics_df.index.name = 'Model'
-            metrics_df = metrics_df.reset_index()
+        metrics_df = pd.DataFrame(all_info['all_results']).T
+        metrics_df.index.name = 'Model'
+        metrics_df = metrics_df.reset_index()
 
-            col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2)
 
-            with col1:
-                # R² comparison chart
-                fig_r2 = px.bar(
-                    metrics_df, x='Model', y='R2',
-                    title='Model Comparison — R² Score',
-                    color='R2',
-                    color_continuous_scale='Viridis',
-                    text='R2'
-                )
-                fig_r2.update_traces(texttemplate='%{text:.4f}', textposition='outside')
-                fig_r2.update_layout(
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='#e0e7ff'),
-                    title_font=dict(size=16, color='#e0e7ff'),
-                    xaxis=dict(title='', tickfont=dict(color='#c7d2fe')),
-                    yaxis=dict(title='R² Score', gridcolor='rgba(255,255,255,0.1)', tickfont=dict(color='#c7d2fe')),
-                    coloraxis_showscale=False,
-                    height=400
-                )
-                st.plotly_chart(fig_r2, use_container_width=True)
+        with col1:
+            fig_r2 = px.bar(
+                metrics_df, x='Model', y='R2',
+                title='Model Comparison — R² Score',
+                color='R2',
+                color_continuous_scale='Teal',
+                text='R2'
+            )
+            fig_r2.update_traces(texttemplate='%{text:.4f}', textposition='outside')
+            fig_r2.update_layout(
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='#f8fafc'),
+                title_font=dict(size=16, color='#f8fafc'),
+                xaxis=dict(title='', tickfont=dict(color='#94a3b8')),
+                yaxis=dict(title='R² Score', gridcolor='rgba(255,255,255,0.05)', tickfont=dict(color='#94a3b8')),
+                coloraxis_showscale=False,
+                height=400
+            )
+            st.plotly_chart(fig_r2, use_container_width=True)
 
-            with col2:
-                # MAE comparison
-                fig_mae = px.bar(
-                    metrics_df, x='Model', y='MAE',
-                    title='Model Comparison — MAE',
-                    color='MAE',
-                    color_continuous_scale='Reds_r',
-                    text='MAE'
-                )
-                fig_mae.update_traces(texttemplate='₹%{text:,.0f}', textposition='outside')
-                fig_mae.update_layout(
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='#e0e7ff'),
-                    title_font=dict(size=16, color='#e0e7ff'),
-                    xaxis=dict(title='', tickfont=dict(color='#c7d2fe')),
-                    yaxis=dict(title='Mean Absolute Error', gridcolor='rgba(255,255,255,0.1)', tickfont=dict(color='#c7d2fe')),
-                    coloraxis_showscale=False,
-                    height=400
-                )
-                st.plotly_chart(fig_mae, use_container_width=True)
+        with col2:
+            fig_mae = px.bar(
+                metrics_df, x='Model', y='MAE',
+                title='Model Comparison — MAE',
+                color='MAE',
+                color_continuous_scale='Emrld',
+                text='MAE'
+            )
+            fig_mae.update_traces(texttemplate='₹%{text:,.0f}', textposition='outside')
+            fig_mae.update_layout(
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='#f8fafc'),
+                title_font=dict(size=16, color='#f8fafc'),
+                xaxis=dict(title='', tickfont=dict(color='#94a3b8')),
+                yaxis=dict(title='Mean Absolute Error', gridcolor='rgba(255,255,255,0.05)', tickfont=dict(color='#94a3b8')),
+                coloraxis_showscale=False,
+                height=400
+            )
+            st.plotly_chart(fig_mae, use_container_width=True)
 
-            # Metrics table
-            st.markdown('<p class="section-header">📋 Detailed Metrics</p>', unsafe_allow_html=True)
-            styled_df = metrics_df.copy()
-            styled_df['MAE'] = styled_df['MAE'].apply(lambda x: f"₹{x:,.2f}")
-            styled_df['RMSE'] = styled_df['RMSE'].apply(lambda x: f"₹{x:,.2f}")
-            styled_df['R2'] = styled_df['R2'].apply(lambda x: f"{x:.4f}")
-
-            # Highlight best model
-            st.dataframe(styled_df, use_container_width=True, hide_index=True)
-            st.info(f"**Best Model:** {model_info['best_model']} with R² = {model_info['metrics']['R2']:.4f}")
-
-        # Feature Importance
-        st.markdown('<p class="section-header"> Feature Importance</p>', unsafe_allow_html=True)
-        importance_df = get_feature_importance()
-        if importance_df is not None:
+        # Feature Importance for SELECTED model
+        from src.predict import MODELS_DIR
+        st.markdown(f'<p class="section-header"> Feature Importance ({selected_model_name})</p>', unsafe_allow_html=True)
+        
+        safe_name = selected_model_name.replace(' ', '_').lower()
+        importance_path = os.path.join(MODELS_DIR, f'importance_{safe_name}.csv')
+        
+        if os.path.exists(importance_path):
+            importance_df = pd.read_csv(importance_path)
             fig_imp = px.bar(
                 importance_df.head(12),
                 x='importance', y='feature',
                 orientation='h',
-                title='Top Price-Driving Factors',
+                title=f'Key Drivers for {selected_model_name}',
                 color='importance',
-                color_continuous_scale='Viridis'
+                color_continuous_scale='Teal'
             )
             fig_imp.update_layout(
                 plot_bgcolor='rgba(0,0,0,0)',
                 paper_bgcolor='rgba(0,0,0,0)',
-                font=dict(color='#e0e7ff'),
-                title_font=dict(size=16, color='#e0e7ff'),
-                xaxis=dict(title='Importance', gridcolor='rgba(255,255,255,0.1)', tickfont=dict(color='#c7d2fe')),
-                yaxis=dict(title='', categoryorder='total ascending', tickfont=dict(color='#c7d2fe')),
+                font=dict(color='#f8fafc'),
+                title_font=dict(size=16, color='#f8fafc'),
+                xaxis=dict(title='Importance', gridcolor='rgba(255,255,255,0.05)', tickfont=dict(color='#94a3b8')),
+                yaxis=dict(title='', categoryorder='total ascending', tickfont=dict(color='#94a3b8')),
                 coloraxis_showscale=False,
                 height=450
             )
             st.plotly_chart(fig_imp, use_container_width=True)
-
-            st.markdown("""
-            <div class="metric-card" style="text-align: left; padding: 20px;">
-                <h3 style="margin-bottom: 12px;">💡 Key Insights</h3>
-                <p style="color: #c7d2fe; line-height: 1.8;">
-                    • <strong>Area</strong> is the most influential factor in determining property prices<br>
-                    • <strong>Bathrooms</strong> and <strong>stories</strong> significantly impact pricing<br>
-                    • <strong>Air conditioning</strong> and <strong>main road access</strong> add premium value<br>
-                    • <strong>Furnished</strong> properties command higher prices than unfurnished ones
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
+        else:
+            st.info(f"Feature importance not available for {selected_model_name}.")
 
     # ─────────────────────────────────────────────────────────────
     # TAB 3: Batch Upload
     # ─────────────────────────────────────────────────────────────
     with tab3:
         st.markdown('<p class="section-header">📁 Batch Prediction from CSV</p>', unsafe_allow_html=True)
-
-        st.markdown("""
-        <div class="metric-card" style="text-align: left;">
-            <h3> Required CSV Columns</h3>
-            <p style="color: #c7d2fe;">
-                area, bedrooms, bathrooms, stories, mainroad, guestroom, basement,
-                hotwaterheating, airconditioning, parking, prefarea, furnishingstatus
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.info(f"Processing will use the selected model: **{selected_model_name}**")
 
         st.markdown("")
         uploaded_file = st.file_uploader("Upload a CSV file", type=['csv'])
@@ -262,50 +273,24 @@ if model_loaded:
                 df_upload = pd.read_csv(uploaded_file)
                 st.success(f" Loaded {len(df_upload)} properties")
 
-                # Show preview
-                st.markdown('<p class="section-header">📋 Data Preview</p>', unsafe_allow_html=True)
-                st.dataframe(df_upload.head(10), use_container_width=True)
-
                 if st.button(" Predict All Prices", use_container_width=True):
-                    with st.spinner(" Processing batch predictions..."):
-                        result_df = predict_batch(df_upload, model=model, scaler=scaler, feature_names=feature_names)
+                    with st.spinner(f" Processing batch predictions using {selected_model_name}..."):
+                        result_df = predict_batch(
+                            df_upload, 
+                            model=model, 
+                            scaler=scaler, 
+                            feature_names=feature_names
+                        )
 
-                    st.markdown('<p class="section-header"> Predictions</p>', unsafe_allow_html=True)
+                    st.markdown('<p class="section-header"> Results</p>', unsafe_allow_html=True)
                     st.dataframe(result_df, use_container_width=True)
-
-                    # Summary stats
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        st.metric("Average Price", f"₹{result_df['predicted_price'].mean():,.0f}")
-                    with col2:
-                        st.metric("Min Price", f"₹{result_df['predicted_price'].min():,.0f}")
-                    with col3:
-                        st.metric("Max Price", f"₹{result_df['predicted_price'].max():,.0f}")
-                    with col4:
-                        st.metric("Total Properties", len(result_df))
-
-                    # Price distribution of predictions
-                    fig_dist = px.histogram(
-                        result_df, x='predicted_price', nbins=20,
-                        title='Predicted Price Distribution',
-                        color_discrete_sequence=['#764ba2']
-                    )
-                    fig_dist.update_layout(
-                        plot_bgcolor='rgba(0,0,0,0)',
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        font=dict(color='#e0e7ff'),
-                        title_font=dict(size=16, color='#e0e7ff'),
-                        xaxis=dict(title='Predicted Price', gridcolor='rgba(255,255,255,0.1)'),
-                        yaxis=dict(title='Count', gridcolor='rgba(255,255,255,0.1)'),
-                    )
-                    st.plotly_chart(fig_dist, use_container_width=True)
 
                     # Download results
                     csv = result_df.to_csv(index=False)
                     st.download_button(
                         label=" Download Predictions CSV",
                         data=csv,
-                        file_name="property_predictions.csv",
+                        file_name=f"predictions_{safe_name}.csv",
                         mime="text/csv",
                         use_container_width=True
                     )

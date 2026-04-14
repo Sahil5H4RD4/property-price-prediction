@@ -18,9 +18,18 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 MODELS_DIR = os.path.join(BASE_DIR, 'models')
 
 
-def load_model():
+def load_model(model_name=None):
     """Load the trained model, scaler, and feature names."""
-    model = joblib.load(os.path.join(MODELS_DIR, 'best_model.pkl'))
+    if model_name:
+        safe_name = model_name.replace(' ', '_').lower()
+        model_path = os.path.join(MODELS_DIR, f'{safe_name}.pkl')
+        if not os.path.exists(model_path):
+            # Fallback to best model
+            model_path = os.path.join(MODELS_DIR, 'best_model.pkl')
+    else:
+        model_path = os.path.join(MODELS_DIR, 'best_model.pkl')
+        
+    model = joblib.load(model_path)
     scaler = joblib.load(os.path.join(MODELS_DIR, 'scaler.pkl'))
     feature_names = joblib.load(os.path.join(MODELS_DIR, 'feature_names.pkl'))
 
@@ -30,13 +39,14 @@ def load_model():
     return model, scaler, feature_names, model_info
 
 
-def predict_price(input_dict, model=None, scaler=None, feature_names=None):
+def predict_price(input_dict, model=None, scaler=None, feature_names=None, model_name=None):
     """
     Predict price for a single property.
 
     Args:
         input_dict: dict with property features
         model, scaler, feature_names: pre-loaded artifacts (optional)
+        model_name: name of the specific model to use if model is None
 
     Returns:
         dict with predicted_price, model_name, confidence metrics
@@ -44,8 +54,9 @@ def predict_price(input_dict, model=None, scaler=None, feature_names=None):
     from src.preprocess import preprocess_single_input
 
     if model is None:
-        model, scaler, feature_names, model_info = load_model()
+        model, scaler, feature_names, model_info = load_model(model_name)
     else:
+        # If model is provided, we still need model_info for metrics
         with open(os.path.join(MODELS_DIR, 'model_info.json'), 'r') as f:
             model_info = json.load(f)
 
@@ -55,11 +66,16 @@ def predict_price(input_dict, model=None, scaler=None, feature_names=None):
     # Predict
     predicted_price = model.predict(X)[0]
 
+    # Get metrics for the specific model
+    actual_model_name = model_name if model_name in model_info['all_results'] else model_info['best_model']
+    metrics = model_info['all_results'].get(actual_model_name, model_info['metrics'])
+
     return {
         'predicted_price': round(predicted_price, 2),
-        'model_name': model_info['best_model'],
-        'model_r2': model_info['metrics']['R2'],
-        'model_mae': model_info['metrics']['MAE'],
+        'model_name': actual_model_name,
+        'model_r2': metrics['R2'],
+        'model_mae': metrics['MAE'],
+        'model_rmse': metrics.get('RMSE', 0),
     }
 
 
