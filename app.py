@@ -115,6 +115,15 @@ if model_loaded:
             furnishingstatus = st.selectbox("Furnishing Status",
                                             options=['furnished', 'semi-furnished', 'unfurnished'], index=1)
 
+        st.markdown('<p class="section-header" style="margin-top: 15px;">Financial Settings (For EMI)</p>', unsafe_allow_html=True)
+        col_f1, col_f2, col_f3 = st.columns(3)
+        with col_f1:
+            down_payment_pct = st.number_input("Down Payment (%)", min_value=0.0, max_value=99.0, value=20.0, step=1.0)
+        with col_f2:
+            interest_rate = st.number_input("Interest Rate (%)", min_value=1.0, max_value=25.0, value=8.5, step=0.1)
+        with col_f3:
+            tenure_years = st.selectbox("Loan Tenure (Years)", options=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30], index=3)
+
         st.markdown("")
         predict_btn = st.button("Predict Price", use_container_width=True)
 
@@ -158,10 +167,14 @@ if model_loaded:
                 </div>
                 """, unsafe_allow_html=True)
             with col_b:
+                loan_amount = predicted * (1 - down_payment_pct / 100)
+                r = (interest_rate / 100) / 12
+                n = tenure_years * 12
+                emi = (loan_amount * r * (1 + r)**n) / ((1 + r)**n - 1) if r > 0 else loan_amount / n
                 st.markdown(f"""
                 <div class="metric-card">
-                    <h3>Monthly EMI (20yr @ 8.5%)</h3>
-                    <h2>₹{(predicted * 0.085/12 * (1+0.085/12)**240) / ((1+0.085/12)**240 - 1):,.0f}</h2>
+                    <h3>Monthly EMI ({tenure_years}yr @ {interest_rate}%, {down_payment_pct}% down)</h3>
+                    <h2>₹{emi:,.0f}</h2>
                 </div>
                 """, unsafe_allow_html=True)
             with col_c:
