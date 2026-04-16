@@ -29,3 +29,5 @@ Thumbs.db
 
 # Models (large files - uncomment if using git lfs)
 # models/*.pkl
+
+.env
