@@ -86,7 +86,7 @@ st.markdown("""
 
 if model_loaded:
     # ─── Tabs ────────────────────────────────────────────────────
-    tab1, tab2, tab3 = st.tabs(["Predict Price", "Model Insights", "Batch Upload"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Predict Price", "AI Advisor", "Model Insights", "Batch Upload"])
 
     # ─────────────────────────────────────────────────────────────
     # TAB 1: Single Property Prediction
@@ -159,6 +159,13 @@ if model_loaded:
 
             # Price context
             col_a, col_b, col_c = st.columns(3)
+            
+            # Save to session_state for AI Advisor
+            st.session_state['last_prediction'] = {
+                'input_data': input_data,
+                'result': result,
+                'predicted': predicted,
+            }
             with col_a:
                 st.markdown(f"""
                 <div class="metric-card">
@@ -186,9 +193,48 @@ if model_loaded:
                 """, unsafe_allow_html=True)
 
     # ─────────────────────────────────────────────────────────────
-    # TAB 2: Model Insights
+    # TAB 2: AI Advisor
     # ─────────────────────────────────────────────────────────────
     with tab2:
+        st.markdown('<p class="section-header">🤖 AI Real Estate Advisor</p>', unsafe_allow_html=True)
+        if 'last_prediction' not in st.session_state:
+            st.info("🏡 Please predict a property price in the 'Predict Price' tab first.")
+        else:
+            st.success("✅ Property data loaded. Ready for AI Analysis.")
+            
+            if st.button("Generate Advisory Report", type="primary", use_container_width=True):
+                with st.spinner("Analyzing property, retrieving market RAG data, and comparing properties..."):
+                    from src.agent import run_advisory_agent
+                    report = run_advisory_agent(
+                        property_details=st.session_state['last_prediction']['input_data'],
+                        predicted_price=st.session_state['last_prediction']['predicted'],
+                        model_metrics=st.session_state['last_prediction']['result']
+                    )
+                    st.session_state['last_report'] = report
+            
+            if 'last_report' in st.session_state:
+                st.markdown("### 📋 Advisory Report")
+                st.markdown(st.session_state['last_report'])
+                st.markdown("---")
+                
+                try:
+                    from src.pdf_exporter import generate_report_pdf
+                    pdf_path = generate_report_pdf(st.session_state['last_report'])
+                    with open(pdf_path, "rb") as f:
+                        st.download_button(
+                            label="📄 Download Report as PDF",
+                            data=f,
+                            file_name="AI_Advisory_Report.pdf",
+                            mime="application/pdf",
+                            use_container_width=True
+                        )
+                except Exception as e:
+                    st.error(f"Could not generate PDF: {e}")
+
+    # ─────────────────────────────────────────────────────────────
+    # TAB 3: Model Insights
+    # ─────────────────────────────────────────────────────────────
+    with tab3:
         st.markdown('<p class="section-header"> Model Performance</p>', unsafe_allow_html=True)
 
         # Model metrics comparison
@@ -272,9 +318,9 @@ if model_loaded:
             st.info(f"Feature importance not available for {selected_model_name}.")
 
     # ─────────────────────────────────────────────────────────────
-    # TAB 3: Batch Upload
+    # TAB 4: Batch Upload
     # ─────────────────────────────────────────────────────────────
-    with tab3:
+    with tab4:
         st.markdown('<p class="section-header">📁 Batch Prediction from CSV</p>', unsafe_allow_html=True)
         st.info(f"Processing will use the selected model: **{selected_model_name}**")
 
