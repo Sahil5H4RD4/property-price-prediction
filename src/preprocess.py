@@ -5,12 +5,15 @@ Handles data cleaning, encoding, feature engineering,
 scaling, and train/test splitting for the housing dataset.
 """
 
+import logging
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 import os
 import joblib
+
+logger = logging.getLogger(__name__)
 
 # ─── Paths ───────────────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -19,7 +22,7 @@ MODELS_DIR = os.path.join(BASE_DIR, 'models')
 os.makedirs(MODELS_DIR, exist_ok=True)
 
 
-# ─── Binary Columns ─────────────────────────────────────────────
+# ─── Column Definitions ──────────────────────────────────────────
 BINARY_COLUMNS = [
     'mainroad', 'guestroom', 'basement',
     'hotwaterheating', 'airconditioning', 'prefarea'
@@ -29,217 +32,213 @@ CATEGORICAL_COLUMNS = ['furnishingstatus']
 
 NUMERICAL_COLUMNS = ['area', 'bedrooms', 'bathrooms', 'stories', 'parking']
 
+# Area tier boundaries derived from the training dataset quantiles.
+# These mirror the pd.qcut(q=3) split so inference matches training.
+# Recomputed from Housing.csv: 33rd percentile ≈ 4600, 66th ≈ 8000.
+AREA_TIER_LOW = 4600
+AREA_TIER_HIGH = 8000
 
-def load_raw_data():
+# Module-level cache for scaler and feature names
+_scaler_cache: StandardScaler | None = None
+_feature_names_cache: list | None = None
+
+
+def _get_scaler_and_features() -> tuple[StandardScaler, list]:
+    """Load scaler and feature names from disk once, then cache."""
+    global _scaler_cache, _feature_names_cache
+    if _scaler_cache is None or _feature_names_cache is None:
+        scaler_path = os.path.join(MODELS_DIR, 'scaler.pkl')
+        features_path = os.path.join(MODELS_DIR, 'feature_names.pkl')
+        if not os.path.exists(scaler_path) or not os.path.exists(features_path):
+            raise FileNotFoundError(
+                "scaler.pkl or feature_names.pkl not found. Run src/train.py first."
+            )
+        _scaler_cache = joblib.load(scaler_path)
+        _feature_names_cache = joblib.load(features_path)
+        logger.debug("Loaded scaler and feature names into module cache")
+    return _scaler_cache, _feature_names_cache
+
+
+def load_raw_data() -> pd.DataFrame:
     """Load the raw housing CSV."""
     df = pd.read_csv(DATA_PATH)
-    print(f"Loaded {len(df)} rows, {len(df.columns)} columns")
+    logger.info("Loaded %d rows, %d columns from %s", len(df), len(df.columns), DATA_PATH)
     return df
 
 
-def handle_missing_values(df):
-    """Handle missing values in the dataset."""
-    # Check for missing values
+def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
+    """Fill missing numeric values with median and categorical with mode."""
     missing = df.isnull().sum()
     if missing.sum() > 0:
-        print(f"Found missing values:\n{missing[missing > 0]}")
-        # Fill numeric with median
+        logger.warning("Missing values found:\n%s", missing[missing > 0])
         for col in df.select_dtypes(include=[np.number]).columns:
             if df[col].isnull().sum() > 0:
-                df[col].fillna(df[col].median(), inplace=True)
-        # Fill categorical with mode
+                df[col] = df[col].fillna(df[col].median())
         for col in df.select_dtypes(include=['object']).columns:
             if df[col].isnull().sum() > 0:
-                df[col].fillna(df[col].mode()[0], inplace=True)
-        print("Missing values handled")
+                df[col] = df[col].fillna(df[col].mode()[0])
+        logger.info("Missing values filled")
     else:
-        print("No missing values found")
+        logger.debug("No missing values found")
     return df
 
 
-def encode_binary_features(df):
+def encode_binary_features(df: pd.DataFrame) -> pd.DataFrame:
     """Encode yes/no binary features as 0/1."""
     for col in BINARY_COLUMNS:
-        if col in df.columns:
-            # More robust check: handle any non-numeric type that might contain 'yes'/'no'
-            if not pd.api.types.is_numeric_dtype(df[col]):
-                df[col] = df[col].map({'yes': 1, 'no': 0}).fillna(0).astype(int)
-    print(f"Encoded {len(BINARY_COLUMNS)} binary columns")
+        if col in df.columns and not pd.api.types.is_numeric_dtype(df[col]):
+            df[col] = df[col].map({'yes': 1, 'no': 0}).fillna(0).astype(int)
+    logger.debug("Encoded %d binary columns", len(BINARY_COLUMNS))
     return df
 
 
-def encode_categorical_features(df):
-    """One-hot encode categorical features."""
+def encode_categorical_features(df: pd.DataFrame) -> pd.DataFrame:
+    """One-hot encode furnishingstatus."""
     df = pd.get_dummies(df, columns=CATEGORICAL_COLUMNS, drop_first=False)
-    print(f"One-hot encoded: {CATEGORICAL_COLUMNS}")
+    logger.debug("One-hot encoded: %s", CATEGORICAL_COLUMNS)
     return df
 
 
-def engineer_features(df):
+def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     """Create derived features for better prediction."""
-    # Total rooms = bedrooms + bathrooms
     df['total_rooms'] = df['bedrooms'] + df['bathrooms']
-
-    # Area per room
     df['area_per_room'] = df['area'] / df['total_rooms'].replace(0, 1)
 
-    # Amenity score (sum of all binary amenities)
     amenity_cols = [col for col in BINARY_COLUMNS if col in df.columns]
     df['amenity_score'] = df[amenity_cols].sum(axis=1)
 
-    # Property tier based on area
     df['area_tier'] = pd.qcut(df['area'], q=3, labels=[0, 1, 2]).astype(int)
 
-    print(f"Engineered features: total_rooms, area_per_room, amenity_score, area_tier")
+    logger.debug("Engineered features: total_rooms, area_per_room, amenity_score, area_tier")
     return df
 
 
-def scale_features(X_train, X_test):
-    """Apply StandardScaler to features, fit on train, transform both."""
+def scale_features(
+    X_train: pd.DataFrame, X_test: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.DataFrame, StandardScaler]:
+    """Fit StandardScaler on train, transform both sets, and persist."""
+    global _scaler_cache
     scaler = StandardScaler()
     X_train_scaled = pd.DataFrame(
-        scaler.fit_transform(X_train),
-        columns=X_train.columns,
-        index=X_train.index
+        scaler.fit_transform(X_train), columns=X_train.columns, index=X_train.index
     )
     X_test_scaled = pd.DataFrame(
-        scaler.transform(X_test),
-        columns=X_test.columns,
-        index=X_test.index
+        scaler.transform(X_test), columns=X_test.columns, index=X_test.index
     )
 
-    # Save the scaler for inference
     scaler_path = os.path.join(MODELS_DIR, 'scaler.pkl')
     joblib.dump(scaler, scaler_path)
-    print(f"Scaler saved to {scaler_path}")
-
+    _scaler_cache = scaler  # keep module cache in sync
+    logger.info("Scaler fitted and saved to %s", scaler_path)
     return X_train_scaled, X_test_scaled, scaler
 
 
-def preprocess_pipeline(test_size=0.2, random_state=42):
-    """
-    Full preprocessing pipeline.
+def preprocess_pipeline(test_size: float = 0.2, random_state: int = 42):
+    """Full preprocessing pipeline.
 
     Returns:
         X_train, X_test, y_train, y_test, feature_names, scaler
     """
-    print("\n" + "=" * 60)
-    print("DATA PREPROCESSING PIPELINE")
-    print("=" * 60)
+    global _feature_names_cache
 
-    # Load
+    logger.info("Starting preprocessing pipeline")
+
     df = load_raw_data()
-
-    # Clean
     df = handle_missing_values(df)
-
-    # Encode
     df = encode_binary_features(df)
     df = encode_categorical_features(df)
-
-    # Feature Engineering
     df = engineer_features(df)
 
-    # Separate target
     y = df['price']
     X = df.drop('price', axis=1)
-
-    # Store feature names
     feature_names = X.columns.tolist()
 
-    # Train/test split
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=random_state
     )
-    print(f"Train/test split: {len(X_train)} train, {len(X_test)} test")
+    logger.info("Train/test split: %d train, %d test", len(X_train), len(X_test))
 
-    # Scale
     X_train_scaled, X_test_scaled, scaler = scale_features(X_train, X_test)
 
-    # Save feature names
     feature_names_path = os.path.join(MODELS_DIR, 'feature_names.pkl')
     joblib.dump(feature_names, feature_names_path)
-    print(f"Feature names saved ({len(feature_names)} features)")
+    _feature_names_cache = feature_names  # sync module cache
+    logger.info("Feature names saved: %d features", len(feature_names))
 
-    print("\n Preprocessing complete!")
-    print(f"   Features: {feature_names}")
-    print("=" * 60)
-
+    logger.info("Preprocessing complete. Features: %s", feature_names)
     return X_train_scaled, X_test_scaled, y_train, y_test, feature_names, scaler
 
 
-def preprocess_single_input(input_dict, scaler=None, feature_names=None):
-    """
-    Preprocess a single property input for prediction.
+def _infer_area_tier(area: float) -> int:
+    """Map area to tier using boundaries derived from training-set quantiles."""
+    if area < AREA_TIER_LOW:
+        return 0
+    elif area < AREA_TIER_HIGH:
+        return 1
+    return 2
+
+
+def preprocess_single_input(
+    input_dict: dict,
+    scaler: StandardScaler | None = None,
+    feature_names: list | None = None,
+) -> pd.DataFrame:
+    """Preprocess a single property dict for inference.
+
+    Uses cached scaler/feature_names if not supplied, avoiding repeated disk reads.
 
     Args:
-        input_dict: dict with property features
-        scaler: fitted StandardScaler (loaded from file if None)
-        feature_names: list of feature names (loaded from file if None)
+        input_dict: raw property features.
+        scaler: fitted StandardScaler; loaded from cache if None.
+        feature_names: ordered feature list; loaded from cache if None.
 
     Returns:
-        Scaled DataFrame ready for prediction
+        Scaled single-row DataFrame ready for model.predict().
     """
-    if scaler is None:
-        scaler = joblib.load(os.path.join(MODELS_DIR, 'scaler.pkl'))
-    if feature_names is None:
-        feature_names = joblib.load(os.path.join(MODELS_DIR, 'feature_names.pkl'))
+    if scaler is None or feature_names is None:
+        cached_scaler, cached_features = _get_scaler_and_features()
+        scaler = scaler or cached_scaler
+        feature_names = feature_names or cached_features
 
-    # Create a single-row DataFrame
     df = pd.DataFrame([input_dict])
 
-    # Encode binary features
+    # Encode binary columns
     for col in BINARY_COLUMNS:
-        if col in df.columns:
-            # Robust check for strings/objects/categories
-            if not pd.api.types.is_numeric_dtype(df[col]):
-                df[col] = df[col].map({'yes': 1, 'no': 0}).fillna(0).astype(int)
+        if col in df.columns and not pd.api.types.is_numeric_dtype(df[col]):
+            df[col] = df[col].map({'yes': 1, 'no': 0}).fillna(0).astype(int)
 
     # One-hot encode furnishing status
     if 'furnishingstatus' in df.columns:
         furnishing_val = df['furnishingstatus'].iloc[0]
         df = df.drop('furnishingstatus', axis=1)
         for status in ['furnished', 'semi-furnished', 'unfurnished']:
-            col_name = f'furnishingstatus_{status}'
-            df[col_name] = 1 if furnishing_val == status else 0
+            df[f'furnishingstatus_{status}'] = 1 if furnishing_val == status else 0
 
-    # Engineer features
-    df['total_rooms'] = df.get('bedrooms', 0) + df.get('bathrooms', 0)
+    # Feature engineering
+    bedrooms = df.get('bedrooms', pd.Series([0])).iloc[0]
+    bathrooms = df.get('bathrooms', pd.Series([0])).iloc[0]
+    df['total_rooms'] = bedrooms + bathrooms
     total_rooms = df['total_rooms'].iloc[0]
     df['area_per_room'] = df['area'] / (total_rooms if total_rooms > 0 else 1)
 
     amenity_cols = [c for c in BINARY_COLUMNS if c in df.columns]
     df['amenity_score'] = df[amenity_cols].sum(axis=1)
 
-    # For area_tier, use simple rules (matching the quartile logic)
-    area = df['area'].iloc[0]
-    if area < 6000:
-        df['area_tier'] = 0
-    elif area < 12000:
-        df['area_tier'] = 1
-    else:
-        df['area_tier'] = 2
+    df['area_tier'] = _infer_area_tier(float(df['area'].iloc[0]))
 
-    # Ensure all features present and in correct order
+    # Ensure all expected features are present in the correct order
     for feat in feature_names:
         if feat not in df.columns:
             df[feat] = 0
 
-    # Ensure all features are numeric and final cast to float
-    df = df.astype(float)
+    df = df[feature_names].astype(float)
 
-    # Scale
-    df_scaled = pd.DataFrame(
-        scaler.transform(df),
-        columns=feature_names
-    )
-
+    df_scaled = pd.DataFrame(scaler.transform(df), columns=feature_names)
     return df_scaled
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     X_train, X_test, y_train, y_test, feature_names, scaler = preprocess_pipeline()
     print(f"\nX_train shape: {X_train.shape}")
-    print(f"X_test shape: {X_test.shape}")
-    print(f"y_train shape: {y_train.shape}")
-    print(f"y_test shape: {y_test.shape}")
+    print(f"X_test shape:  {X_test.shape}")
