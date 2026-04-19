@@ -27,7 +27,11 @@ Thumbs.db
 # Jupyter
 .ipynb_checkpoints/
 
-# Models (large files - uncomment if using git lfs)
-# models/*.pkl
+# Trained model artifacts — large binary files that should be
+# reproduced via src/train.py, not stored in git history.
+# Use git-lfs (git lfs track "*.pkl") if you need to version them.
+models/*.pkl
+models/model_info.json
+models/*.csv
 
 .env
