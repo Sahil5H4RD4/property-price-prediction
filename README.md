@@ -1,113 +1,209 @@
 # Intelligent Property Price Prediction & Agentic Advisor
 
-An AI-driven real estate ecosystem that combines **Classical Machine Learning** for price prediction with **Agentic AI** for expert investment advisory.
-
-> **Milestone 2 Update** — Agentic AI Real Estate Advisory Assistant (End-Sem)
+An AI-driven real estate system combining **Classical Machine Learning** for price prediction with an **Agentic AI** pipeline for expert investment advisory.
 
 ---
 
-## 🚀 New in Milestone 2: Agentic AI Advisor
+## Features
 
-The system has been extended from a simple predictor into a reasoning agent that analyzes market trends, regulatory data, and user preferences to generate structured advisory reports.
-
-### 🧠 Agentic Workflow (LangGraph)
-We implemented an **explicit state management** workflow using **LangGraph**. The agent processes requests through the following nodes:
-1.  **Analyze**: Evaluates property features and ML-predicted prices for internal consistency.
-2.  **Retrieve (RAG)**: Queries a local vector database for legal (RERA) and market context.
-3.  **Compare**: Performs a horizontal scan of the historical dataset to define price brackets.
-4.  **Generate**: Synthesizes all data into a professional Markdown report using **Groq (Llama 3.3)**.
-
-### 📚 Retrieval-Augmented Generation (RAG)
-*   **Knowledge Base**: Scraped and indexed Wikipedia data on the **RERA Act 2016** and **Indian Real Estate Trends**.
-*   **Vector Engine**: Powered by **FAISS** and **HuggingFace Embeddings** (`all-MiniLM-L6-v2`) for fast, local, and free semantic retrieval.
-
-### 📊 Comparative Analysis (Extension)
-The agent automatically filters the `Housing.csv` dataset to find properties with similar area and bedroom counts, providing:
-*   Average historical price for the segment.
-*   Segment price range (Min/Max).
-*   Contextual validation of the AI's prediction.
-
-### 📄 PDF Report Export (Extension)
-Users can now export the full AI Advisory Report as a professionally formatted **PDF document** directly from the UI, including:
-*   Property Summary
-*   Market Trend Insights
-*   Investment Recommendations
-*   Legal Disclaimers
+| Feature | Description |
+|---------|-------------|
+| **Price Prediction** | Four ML models (Linear Regression, Decision Tree, Random Forest, Gradient Boosting) with R², MAE, RMSE metrics |
+| **AI Advisor** | LangGraph multi-step agent: analyze → retrieve market data (RAG) → compare properties → generate Markdown report |
+| **RAG Knowledge Base** | FAISS + HuggingFace embeddings indexed from Wikipedia (RERA Act 2016, Indian Real Estate, Housing in India) |
+| **Batch Predictions** | CSV upload with multi-encoding support (UTF-8, UTF-8-BOM, Latin-1) |
+| **PDF Export** | Download full advisory report as PDF |
+| **EDA** | Automated exploratory plots (distribution, correlation heatmap, feature vs price) |
 
 ---
 
-## 🏗️ System Architecture
+## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    STREAMLIT WEB UI                          │
-│  ┌──────────────┐ ┌───────────────┐ ┌────────────────────┐  │
-│  │ Predict Price│ │  AI Advisor   │ │   Batch Analytics  │  │
-│  └──────┬───────┘ └───────┬───────┘ └────────┬───────────┘  │
-│         │                 │                   │              │
-├─────────┼─────────────────┼───────────────────┼──────────────┤
-│         ▼                 ▼                   ▼              │
-│  ┌────────────────┐ ┌────────────────┐ ┌───────────────────┐ │
-│  │   ML ENGINE    │ │  LANGGRAPH     │ │    RAG ENGINE     │ │
-│  │ (Scikit-Learn) │ │ (Llama 3.3/Groq) │ │ (FAISS + HF)    │ │
-│  └────────────────┘ └────────────────┘ └───────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+┌────────────────────────── Streamlit UI ──────────────────────────┐
+│  [Predict Price]  [AI Advisor]  [Model Insights]  [Batch Upload]  │
+└──────────┬──────────────┬────────────────────────────────────────┘
+           │              │
+    ┌──────▼──────┐  ┌────▼───────────────────────────────────────┐
+    │  ML Engine  │  │            LangGraph Agent                  │
+    │ scikit-learn│  │  analyze → retrieve (FAISS RAG)             │
+    │ 4 models    │  │         → compare (Housing.csv)             │
+    └─────────────┘  │         → generate (Groq Llama 3.3-70b)    │
+                     └────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🛠️ Updated Tech Stack
+## Quick Start
 
-| Category | Tool |
-|----------|------|
-| **LLM Inference** | Groq (Llama-3.3-70b-versatile) |
-| **Agent Framework** | LangGraph, LangChain |
-| **Vector Database** | FAISS |
-| **Embeddings** | HuggingFace (Local) |
-| **PDF Generation** | fpdf2 |
-| **Classic ML** | Scikit-Learn |
-| **Dashboard** | Streamlit |
+### 1. Clone and Install
 
----
-
-## ⚡ Quick Start (Updated)
-
-### 1. Installation
 ```bash
 git clone https://github.com/Sahil5H4RD4/property-price-prediction.git
 cd property-price-prediction
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv venv && source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Configuration
-Create a `.env` file in the root directory:
-```env
-GROQ_API_KEY=your_groq_api_key_here
+### 2. Configure Environment Variables
+
+```bash
+cp .env.example .env
+# Open .env and set GROQ_API_KEY=your_key_here
+# Get a free key at https://console.groq.com/keys
 ```
 
-### 3. Build Knowledge Base (RAG)
-Fetch market data and build the vector index:
+### 3. Train Models
+
+```bash
+python src/train.py
+# Generates models/ artifacts: *.pkl, model_info.json, feature_importance CSVs
+```
+
+### 4. Build the RAG Vectorstore
+
 ```bash
 python src/build_rag.py
+# Scrapes Wikipedia and creates data/vectorstore/ FAISS index
+# Requires internet access; takes ~1–2 minutes on first run
 ```
 
-### 4. Run the App
+### 5. Launch the App
+
 ```bash
 streamlit run app.py
+# Opens http://localhost:8501
+```
+
+Or use `make` if you prefer:
+
+```bash
+make install   # install deps
+make train     # train models
+make rag       # build vectorstore
+make run       # launch Streamlit
 ```
 
 ---
 
-## 📂 Project Structure (New Modules)
+## Project Structure
 
-*   `src/agent.py`: LangGraph state management and LLM reasoning logic.
-*   `src/build_rag.py`: RAG pipeline for fetching and indexing market documents.
-*   `src/pdf_exporter.py`: Utility to convert AI reports to PDF.
-*   `data/vectorstore/`: Local FAISS index files.
+```
+property-price-prediction/
+├── app.py                  # Streamlit entry point
+├── src/
+│   ├── __init__.py         # Package API documentation
+│   ├── preprocess.py       # Data cleaning, encoding, feature engineering
+│   ├── train.py            # Model training and evaluation pipeline
+│   ├── predict.py          # Prediction utilities with input validation
+│   ├── agent.py            # LangGraph advisory agent
+│   ├── build_rag.py        # FAISS vectorstore builder (Wikipedia scraper)
+│   └── pdf_exporter.py     # Markdown → PDF converter
+├── tests/
+│   ├── conftest.py         # Shared pytest fixtures
+│   ├── test_preprocess.py  # 18 preprocessing unit tests
+│   ├── test_predict.py     # 27 prediction utility tests
+│   ├── test_train.py       # 18 training pipeline tests
+│   ├── test_agent.py       # 13 advisory agent tests
+│   └── test_pdf_exporter.py # 20 PDF generation tests
+├── notebooks/
+│   └── eda.py              # Exploratory data analysis
+├── data/
+│   ├── Housing.csv         # Source dataset (545 properties)
+│   ├── eda_plots/          # Generated EDA visualisations
+│   └── vectorstore/        # FAISS index (built by build_rag.py)
+├── models/                 # Generated by train.py (gitignored)
+├── scratch/
+│   └── test_error.py       # Manual integration smoke test
+├── static/
+│   └── style.css           # Custom Streamlit dark-theme CSS
+├── .streamlit/
+│   └── config.toml         # Streamlit theme configuration
+├── .env.example            # Required environment variables template
+├── requirements.txt        # Runtime dependencies
+├── requirements-dev.txt    # Development and testing dependencies
+├── setup.cfg               # pytest, flake8, isort, mypy configuration
+├── Makefile                # Developer workflow shortcuts
+├── Procfile                # Heroku deployment configuration
+└── runtime.txt             # Python 3.12
+```
+
+---
+
+## Tech Stack
+
+| Category | Library | Version |
+|----------|---------|---------|
+| ML | scikit-learn | ≥ 1.4.0 |
+| Data | pandas, numpy | ≥ 2.2.0, ≥ 1.26.0 |
+| Agent | LangGraph | ≥ 0.0.26 |
+| LLM | langchain-groq (Llama 3.3-70b) | ≥ 0.1.0 |
+| RAG | FAISS, HuggingFace sentence-transformers | ≥ 1.7.4, ≥ 2.2.0 |
+| UI | Streamlit | ≥ 1.31.0 |
+| Visualisation | Plotly | ≥ 5.18.0 |
+| PDF | fpdf2 | ≥ 2.7.4 |
+
+---
+
+## Running Tests
+
+```bash
+# Install dev dependencies first
+pip install -r requirements-dev.txt
+
+# Run all tests
+make test
+
+# Run with coverage report
+make test-cov
+
+# Run a specific test file
+pytest tests/test_predict.py -v
+```
+
+> Tests mock all ML artifacts, FAISS vectorstores, and LLM calls. No trained models or API keys are required to run the test suite.
+
+---
+
+## Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `GROQ_API_KEY` | **Yes** | — | Groq API key for the AI Advisor tab |
+| `GROQ_MODEL` | No | `llama-3.3-70b-versatile` | Override the Groq model |
+| `GROQ_TEMPERATURE` | No | `0.2` | LLM sampling temperature (0 = deterministic) |
+
+---
+
+## Reproducing Model Artifacts
+
+Model `.pkl` files are excluded from git (they total ~4.8 MB). Regenerate them:
+
+```bash
+python src/train.py
+# Expected output (R² scores approximate):
+# Linear Regression    R² ≈ 0.67
+# Decision Tree        R² ≈ 0.77
+# Random Forest        R² ≈ 0.82
+# Gradient Boosting    R² ≈ 0.85  ← best model
+```
+
+---
+
+## Deployment
+
+The app is configured for Heroku:
+
+```bash
+heroku create your-app-name
+heroku config:set GROQ_API_KEY=your_key_here
+git push heroku main
+```
+
+Note: The FAISS vectorstore (`data/vectorstore/`) must be committed for RAG to work on Heroku. Run `python src/build_rag.py` locally, then `git add data/vectorstore/ && git commit` before pushing.
 
 ---
 
 ## License
-This project is for educational purposes as part of the AI/ML End-Sem course project.
+
+Educational project — AI/ML course end-semester submission.
