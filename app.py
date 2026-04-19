@@ -329,7 +329,18 @@ if model_loaded:
 
         if uploaded_file:
             try:
-                df_upload = pd.read_csv(uploaded_file)
+                # Try multiple encodings to handle UTF-8 BOM, Latin-1, etc.
+                df_upload = None
+                for encoding in ('utf-8', 'utf-8-sig', 'latin-1', 'cp1252'):
+                    try:
+                        uploaded_file.seek(0)
+                        df_upload = pd.read_csv(uploaded_file, encoding=encoding)
+                        break
+                    except (UnicodeDecodeError, pd.errors.ParserError):
+                        continue
+                if df_upload is None:
+                    st.error("Could not decode the CSV file. Please save it as UTF-8 and re-upload.")
+                    st.stop()
                 st.success(f" Loaded {len(df_upload)} properties")
 
                 if st.button(" Predict All Prices", use_container_width=True):
