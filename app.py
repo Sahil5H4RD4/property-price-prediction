@@ -5,16 +5,21 @@ Streamlit-based UI for predicting property prices
 using machine learning models.
 """
 
-import streamlit as st
-import pandas as pd
-import plotly.express as px
+import logging
 import os
 import sys
+
+import pandas as pd
+import plotly.express as px
+import streamlit as st
+
+logging.basicConfig(level=logging.INFO, format='%(levelname)s %(name)s: %(message)s')
+logger = logging.getLogger(__name__)
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(__file__))
 
-from src.predict import predict_price, predict_batch, get_feature_importance, load_model
+from src.predict import get_model_info, load_model, predict_batch, predict_price
 
 # ─── Page Config ─────────────────────────────────────────────────
 st.set_page_config(
@@ -24,14 +29,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# === Section ===
+
 @st.cache_resource
 def get_all_model_info():
-    """Load the model info JSON once."""
-    from src.predict import MODELS_DIR
-    import json
-    with open(os.path.join(MODELS_DIR, 'model_info.json'), 'r') as f:
-        return json.load(f)
+    """Load and cache model info via the shared get_model_info() helper."""
+    return get_model_info()
 
 try:
     all_info = get_all_model_info()
