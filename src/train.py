@@ -5,6 +5,7 @@ Trains multiple regression models, evaluates them,
 extracts feature importances, and saves the best model.
 """
 
+import logging
 import pandas as pd
 import numpy as np
 import os
@@ -16,17 +17,17 @@ from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import sys
 
-# Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from src.preprocess import preprocess_pipeline
 
-# ─── Paths ───────────────────────────────────────────────────────
+logger = logging.getLogger(__name__)
+
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 MODELS_DIR = os.path.join(BASE_DIR, 'models')
 os.makedirs(MODELS_DIR, exist_ok=True)
 
 
-def get_models():
+def get_models() -> dict:
     """Return dictionary of models to train."""
     return {
         'Linear Regression': LinearRegression(),
@@ -40,21 +41,20 @@ def get_models():
     }
 
 
-def evaluate_model(model, X_test, y_test):
-    """Evaluate a model and return metrics."""
+def evaluate_model(model, X_test: pd.DataFrame, y_test: pd.Series) -> dict:
+    """Compute MAE, RMSE, and R² for a fitted model."""
     y_pred = model.predict(X_test)
-    mae = mean_absolute_error(y_test, y_pred)
-    rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-    r2 = r2_score(y_test, y_pred)
     return {
-        'MAE': round(mae, 2),
-        'RMSE': round(rmse, 2),
-        'R2': round(r2, 4),
+        'MAE': round(float(mean_absolute_error(y_test, y_pred)), 2),
+        'RMSE': round(float(np.sqrt(mean_squared_error(y_test, y_pred))), 2),
+        'R2': round(float(r2_score(y_test, y_pred)), 4),
     }
 
 
-def get_feature_importance(model, feature_names, model_name):
-    """Extract feature importances from a trained model."""
+def get_feature_importance(
+    model, feature_names: list, model_name: str
+) -> pd.DataFrame | None:
+    """Extract feature importances from a fitted model."""
     if hasattr(model, 'feature_importances_'):
         importances = model.feature_importances_
     elif hasattr(model, 'coef_'):
@@ -62,67 +62,56 @@ def get_feature_importance(model, feature_names, model_name):
     else:
         return None
 
-    importance_df = pd.DataFrame({
-        'feature': feature_names,
-        'importance': importances
-    }).sort_values('importance', ascending=False)
+    return (
+        pd.DataFrame({'feature': feature_names, 'importance': importances})
+        .sort_values('importance', ascending=False)
+        .reset_index(drop=True)
+    )
 
-    return importance_df
 
-
-def train_and_evaluate():
-    """
-    Full training pipeline:
-    1. Preprocess data
-    2. Train all models
-    3. Evaluate each
-    4. Save the best one
-    5. Extract feature importances
+def train_and_evaluate() -> tuple[dict, str, pd.DataFrame]:
+    """Full training pipeline: preprocess → train → evaluate → save.
 
     Returns:
-        results: dict with model metrics
-        best_model_name: name of the best model
-        feature_importance: DataFrame of feature importances
+        results: dict mapping model name → metrics
+        best_model_name: name of the highest-R² model
+        importance_df: feature importances for the best model
     """
-    print("\n" + "=" * 60)
-    print("MODEL TRAINING & EVALUATION")
-    print("=" * 60)
+    logger.info("Starting model training pipeline")
 
-    # Preprocess
     X_train, X_test, y_train, y_test, feature_names, scaler = preprocess_pipeline()
 
-    # Train and evaluate all models
     models = get_models()
-    results = {}
-    trained_models = {}
+    results: dict = {}
+    trained_models: dict = {}
 
-    print("/n Training models...\n")
-    print(f"{'Model':<25} {'MAE':>12} {'RMSE':>12} {'R²':>10}")
+    logger.info("Training %d models", len(models))
+    print(f"\n{'Model':<25} {'MAE':>12} {'RMSE':>12} {'R²':>10}")
     print("-" * 60)
 
     for name, model in models.items():
-        print(f"  Training {name}...")
+        logger.info("Training %s", name)
         model.fit(X_train, y_train)
         metrics = evaluate_model(model, X_test, y_test)
         results[name] = metrics
         trained_models[name] = model
-        print(f"{name:<25} {metrics['MAE']:>12,.2f} {metrics['RMSE']:>12,.2f} {metrics['R2']:>10.4f}")
 
-        # Save each model
+        print(
+            f"{name:<25} {metrics['MAE']:>12,.2f} "
+            f"{metrics['RMSE']:>12,.2f} {metrics['R2']:>10.4f}"
+        )
+
         model_filename = f"{name.replace(' ', '_').lower()}.pkl"
         joblib.dump(model, os.path.join(MODELS_DIR, model_filename))
+        logger.debug("Saved %s to %s", name, model_filename)
 
-    # Find best model (highest R²)
     best_name = max(results, key=lambda k: results[k]['R2'])
     best_model = trained_models[best_name]
-    print(f"\n Best Model: {best_name} (R² = {results[best_name]['R2']:.4f})")
+    logger.info("Best model: %s (R²=%.4f)", best_name, results[best_name]['R2'])
 
-    # Save best model
     model_path = os.path.join(MODELS_DIR, 'best_model.pkl')
     joblib.dump(best_model, model_path)
-    print(f"Best model saved to {model_path}")
 
-    # Save model name
     model_info = {
         'best_model': best_name,
         'metrics': results[best_name],
@@ -131,28 +120,33 @@ def train_and_evaluate():
     info_path = os.path.join(MODELS_DIR, 'model_info.json')
     with open(info_path, 'w') as f:
         json.dump(model_info, f, indent=2)
-    print(f"Model info saved to {info_path}")
+    logger.info("Model info written to %s", info_path)
 
-    # Feature importances for all applicable models
+    best_importance_df = None
     for name, model in trained_models.items():
         importance_df = get_feature_importance(model, feature_names, name)
-        if importance_df is not None:
-            safe_name = name.replace(' ', '_').lower()
-            importance_path = os.path.join(MODELS_DIR, f'importance_{safe_name}.csv')
-            importance_df.to_csv(importance_path, index=False)
-            
-            # For backward compatibility and main view, save best model importance as the main one
-            if name == best_name:
-                importance_df.to_csv(os.path.join(MODELS_DIR, 'feature_importance.csv'), index=False)
-                print(f"\n Top Feature Importances ({best_name}):")
-                print(importance_df.head(10).to_string(index=False))
+        if importance_df is None:
+            continue
 
-    print("\n" + "=" * 60)
-    print("Training pipeline complete!")
-    print("=" * 60)
+        safe_name = name.replace(' ', '_').lower()
+        importance_path = os.path.join(MODELS_DIR, f'importance_{safe_name}.csv')
+        importance_df.to_csv(importance_path, index=False)
 
-    return results, best_name, importance_df
+        if name == best_name:
+            best_importance_df = importance_df
+            importance_df.to_csv(
+                os.path.join(MODELS_DIR, 'feature_importance.csv'), index=False
+            )
+            logger.info("Top features (%s):\n%s", best_name, importance_df.head(5))
+
+    logger.info("Training pipeline complete")
+    return results, best_name, best_importance_df
 
 
 if __name__ == '__main__':
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s %(name)s: %(message)s'
+    )
     results, best_name, importance_df = train_and_evaluate()
+    print(f"\nBest Model: {best_name}")
