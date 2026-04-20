@@ -93,10 +93,17 @@ def encode_binary_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def encode_categorical_features(df: pd.DataFrame) -> pd.DataFrame:
-    """One-hot encode furnishingstatus."""
-    df = pd.get_dummies(df, columns=CATEGORICAL_COLUMNS, drop_first=False)
+    """One-hot encode furnishingstatus, ensuring all levels are present."""
+    dummies = pd.get_dummies(df, columns=CATEGORICAL_COLUMNS, drop_first=False)
+    
+    # Ensure all levels are present even if not in current sample
+    for status in ['furnished', 'semi-furnished', 'unfurnished']:
+        col = f'furnishingstatus_{status}'
+        if col not in dummies.columns:
+            dummies[col] = 0
+            
     logger.debug("One-hot encoded: %s", CATEGORICAL_COLUMNS)
-    return df
+    return dummies
 
 
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -107,7 +114,16 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     amenity_cols = [col for col in BINARY_COLUMNS if col in df.columns]
     df['amenity_score'] = df[amenity_cols].sum(axis=1)
 
-    df['area_tier'] = pd.qcut(df['area'], q=3, labels=[0, 1, 2]).astype(int)
+    # qcut requires unique bin edges. For small DFs or uniform data, 
+    # we fallback to manual tiering or uniform labels.
+    if len(df['area'].unique()) > 1:
+        try:
+            df['area_tier'] = pd.qcut(df['area'], q=3, labels=[0, 1, 2], duplicates='drop').astype(int)
+        except ValueError:
+            # If qcut still fails due to insufficient unique values for 3 bins
+            df['area_tier'] = df['area'].apply(_infer_area_tier)
+    else:
+        df['area_tier'] = df['area'].apply(_infer_area_tier)
 
     logger.debug("Engineered features: total_rooms, area_per_room, amenity_score, area_tier")
     return df

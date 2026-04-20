@@ -152,10 +152,9 @@ class TestCompareProperties:
 # ─── run_advisory_agent ──────────────────────────────────────────
 
 class TestRunAdvisoryAgent:
-    def test_raises_environment_error_without_api_key(self, valid_property, monkeypatch):
+    def test_raises_environment_error_without_api_key(self):
         from src.agent import run_advisory_agent
-
-        monkeypatch.delenv('GROQ_API_KEY', raising=False)
-        with patch('src.agent.load_dotenv'):  # prevent .env from injecting the key
-            with pytest.raises(EnvironmentError, match="GROQ_API_KEY"):
-                run_advisory_agent(valid_property, 5_000_000.0, {'model_r2': 0.85})
+        with patch('src.agent.os.environ', {}): # Empty environment
+            with patch('dotenv.load_dotenv'):  # patch where it's defined
+                with pytest.raises(EnvironmentError, match="GROQ_API_KEY is not set"):
+                    run_advisory_agent({}, 5_000_000.0, {'model_r2': 0.85})
