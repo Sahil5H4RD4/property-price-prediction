@@ -190,11 +190,23 @@ def run_advisory_agent(
     from dotenv import load_dotenv
     load_dotenv()
 
-    if not os.environ.get("GROQ_API_KEY"):
+    # Priority: 1. Environment Variable / .env  2. Streamlit Secrets (for cloud hosting)
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        try:
+            import streamlit as st
+            api_key = st.secrets.get("GROQ_API_KEY")
+        except Exception:
+            pass
+
+    if not api_key:
         raise EnvironmentError(
-            "GROQ_API_KEY is not set. Add it to your .env file or environment "
-            "before using the AI Advisor."
+            "GROQ_API_KEY is not set. Add it to your .env file locally or "
+            "to Streamlit Secrets in the cloud dashboard."
         )
+
+    # Ensure it's in the environment for LangChain components
+    os.environ["GROQ_API_KEY"] = api_key
 
     logger.info(
         "Running advisory agent for %.0f sqft, %s BHK, predicted \u20b9%,.0f",
